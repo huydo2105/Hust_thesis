@@ -1,94 +1,448 @@
-Helm Chart Development
-Prerequisites
-Using devspace
-Notes
-Helm Charts
-Creating Charts
-Run local development chart
-Notes
-Creating Docker Images
-Releases
-Helm Chart Development
-Prerequisites
-Install devspace.
+- [Tezos k8s](#tezos-k8s)
+  - [Prerequisites](#prerequisites)
+  - [Installing prerequisites](#installing-prerequisites)
+    - [Mac](#mac)
+    - [Arch Linux](#arch-linux)
+    - [Other Operating Systems](#other-operating-systems)
+  - [Configuring Minikube](#configuring-minikube)
+    - [Mac](#mac-1)
+    - [Other Operating Systems](#other-operating-systems-1)
+  - [Starting Minikube](#starting-minikube)
+  - [Tezos k8s Helm Chart](#tezos-k8s-helm-chart)
+- [Joining Mainnet](#joining-mainnet)
+  - [Spinning Up a Regular Peer Node](#spinning-up-a-regular-peer-node)
+- [Creating a Private Blockchain](#creating-a-private-blockchain)
+  - [Zerotier](#zerotier)
+  - [mkchain](#mkchain)
+  - [Start your private chain](#start-your-private-chain)
+  - [Adding nodes within the cluster](#adding-nodes-within-the-cluster)
+  - [Adding external nodes to the cluster](#adding-external-nodes-to-the-cluster)
+    - [On the computer of the joining node](#on-the-computer-of-the-joining-node)
+  - [RPC Authentication](#rpc-authentication)
+- [Indexers](#indexers)
+- [Notes](#notes)
+- [Development](#development)
 
-Ensure minikube is running:
+# Tezos k8s
 
+This README walks you through:
+
+- spinning up Tezos nodes that will join a public chain, e.g. mainnet.
+- creating your own Tezos based private blockchain.
+
+Using `minikube`, your nodes will be running in a peer-to-peer network inside of a Kubernetes cluster. With your custom private blockchain, your network will be also running over a Zerotier VPN.
+
+Follow the prerequisites step first. Then you can jump to either [joining mainnet](#joining-mainnet) or [creating a private chain](#creating-a-private-blockchain).
+
+NOTE: You do not need to clone this repository! All necessary components will be installed.
+
+## Prerequisites
+
+- python3 (>=3.7)
+- [docker](https://docs.docker.com/get-docker/)
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/)
+- [minikube](https://minikube.sigs.k8s.io/docs/)
+- [helm](https://helm.sh/)
+- A [ZeroTier](https://www.zerotier.com/) network with api access token
+
+## Installing prerequisites
+
+This section varies depending on OS.
+
+### Mac
+
+- Install [Docker Desktop](https://docs.docker.com/docker-for-mac/install/).
+
+- Start Docker Desktop and follow the setup instructions. Note: You may quit Docker after it has finished setting up. It is not required that Docker Desktop is running for you to run a Tezos chain.
+
+- Install [homebrew](https://brew.sh/):
+
+  ```shell
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+  ```
+
+- Install other prerequisites:
+  ```shell
+  brew install python3 kubectl minikube helm
+  ```
+
+### Arch Linux
+
+```shell
+pacman -Syu && pacman -S docker python3 minikube kubectl kubectx helm
+```
+
+### Other Operating Systems
+
+Please see the respective pages for installation instructions:
+
+- [python3](https://www.python.org/downloads/)
+- [docker](https://docs.docker.com/get-docker/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- [minikube](https://minikube.sigs.k8s.io/docs/start/)
+- [helm](https://helm.sh/docs/intro/install/)
+
+## Configuring Minikube
+
+It is suggested to deploy minikube as a virtual machine. This requires a virtual machine [driver](https://minikube.sigs.k8s.io/docs/drivers/).
+
+### Mac
+
+Requires the [hyperkit](https://minikube.sigs.k8s.io/docs/drivers/hyperkit/) driver. This comes already bundled together with Docker Desktop.
+
+Make hyperkit the default minikube driver:
+
+```shell
+minikube config set driver hyperkit
+```
+
+(Note: We do not use Docker itself as the minikube driver due to an [issue](https://github.com/kubernetes/minikube/issues/7332) regarding the minikube ingress addon that is required by [rpc-auth](./rpc-auth/README.md))
+
+### Other Operating Systems
+
+If in the next step minikube does not start correctly, you may need to configure a different driver for it. Please see the minikube docs [here](https://minikube.sigs.k8s.io/docs/drivers/) for more information.
+
+## Starting Minikube
+
+```shell
 minikube start
-Configure your shell to use minikube's docker daemon:
+```
 
+Configure your shell environment to use minikube’s Docker daemon:
+
+```shell
 eval $(minikube docker-env)
-Using devspace
-Tell devspace which namespace to use:
+```
 
-devspace use namespace oxheadalpha
-Run mkchain to generate your Helm values. (Note: Devspace will only deploy rpc-auth if you use the rpc-auth profile, regardless if you set it in mkchain. This is to avoid devspace deployment issues. See more below.)
+This allows you to run Docker commands inside of minikube. For example: `docker images` to view the images that minikube has.
 
-Set a CHAIN_NAME env var.
+If you want to unset your shell from using minikube's docker daemon:
 
-Run devspace dev --var CHAIN_NAME=$CHAIN_NAME (you can leave out the --var flag if you used export CHAIN_NAME=my-chain).
+```shell
+eval $(minikube docker-env -u)
+```
 
-You may add the rpc-auth devspace profile by using the -p rpc-auth flag in the devspace dev command. This tells devspace deploy rpc-auth and to redeploy it if its files change. You can also pass another --var flag for rpc-auth like so: --var FLASK_ENV=<development|production>. Devpsace defaults it to development. Running with development will allow the python server to hot reload on file changes. Devspace does not need to restart the pod on file changes as the python server file is synced to the container.
+## Tezos k8s Helm Chart
 
-Devspace will now do a few things:
+To add the Tezos k8s Helm chart to your local Helm chart repo, run:
 
-Create namespace if it doesn't already exist.
-Runs a hook to enable the minikube nginx ingress addon. This is the gateway for external users to access the rpc-auth backend and to then make RPC calls to the Tezos node.
-Runs a hook to increase fs.inotify.max_user_watches to 1048576 in minikube. This is to avoid a "no space left on device" error. See here for more.
-Builds docker images and tags them.
-Deploys Helm charts.
-Starts sync, logging, and port-forwarding services.
-Right now just rpc-auth produces logs from the python server.
-Port-forwarding allows you to directly communicate with containers, allowing for easy bootstrap node RPC calls, as well as requests to the rpc-auth server instead of having to go through the NGINX ingress. Example: curl localhost:8732/chains/main/chain_id
-Will automatically redeploy Helm charts and rebuild docker images depending upon the files you modify.
-Notes
-Devspace recommends to run devspace purge to delete deployments. Keep in mind though that it currently does not delete persistent volumes and claims. They currently don't mention this in their docs. If you want to delete all resources including persistent volumes and claims, run kubectl delete namespace <NAMESPACE>. Even with this command, there are times where PV's/PVC's do not get deleted. This is important to know because you may be spinning up nodes that get old volumes attached with old state, and you may encounter Tezos pod errors. I have experienced this in situations where I left my cluster running for a long time, say overnight, and I shut my laptop and/or it went to sleep. After logging back in and deleting the namespace, the PV's/PVC's are still there and need to be manually deleted.
+```shell
+helm repo add oxheadalpha https://oxheadalpha.github.io/tezos-helm-charts/
+```
 
-If you would like to build all of our images without using Devspace to deploy (you might want to do a helm install instead), you can run devspace build -t dev --skip-push.
+# Joining Mainnet
 
-Due to a current limitation of devspace, multiple profiles cannot be used at one time. Therefore, devspace will watch zerotier files even if tezos nodes are not configured to use it via mkchain. Preferably zerotier would also be a profile in addition to rpc-auth being one.
+## Spinning Up a Regular Peer Node
 
-If you find that you have images built but Devspace is having a hard time getting them and/or is producing errors that don't seem to make sense, you can try rm -rf .devspace to remove any potentially wrong state.
+Connecting to a public net is easy!
 
-Helm Charts
-Creating Charts
-The version in Chart.yaml should be 0.0.0. This is what is stored in version control. The CI will update the version on release and store in our Helm chart repo.
+(See [here](https://tezos.gitlab.io/user/history_modes.html) for info on snapshots and node history modes)
 
-Chart.yaml does not require an appVersion. So we are not using it as it doesn't make sense in our context being that our application is currently a monorepo and every component version is bumped as one. The version field is sufficient.
+Simply run the following to spin up a rolling history node:
 
-Regarding chart dependencies, Chart.yaml should not specify a dependency version for another local chart.
+```shell
+helm install tezos-mainnet oxheadalpha/tezos-chain \
+--namespace oxheadalpha --create-namespace
+```
 
-Being that all charts are bumped to the same version on release, the parent chart will get the latest version of the dependency by default (which is the same as its own version) when installing via our Helm chart repo.
+Running this results in:
 
-Run local development chart
-Instructions as per README install the latest release of tezos-k8s helm chart from a helm repository. To install a development version of a tezos chart in the charts/tezos directory instead, run:
+- Creating a Helm [release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) named tezos-mainnet for your k8s cluster.
+- k8s will spin up one regular (i.e. non-baking node) which will download and import a mainnet snapshot. This will take a few minutes.
+- Once the snapshot step is done, your node will be bootstrapped and syncing with mainnet!
 
-helm install tezos-mainnet charts/tezos --namespace oxheadalpha --create-namespace
-Notes
-If you use helm install|upgrade (instead of devspace) for local charts, make sure you helm dependency update <chart> to get the latest local dependency chart changes that you've made packaged into the parent chart.
+You can find your node in the oxheadalpha namespace with some status information using `kubectl`.
 
-Creating Docker Images
-Currently, we are placing all docker images in the root level directory. The name of the folder is treated as the name of the image being created.
+```shell
+kubectl -n oxheadalpha get pods -l appType=tezos-node
+```
 
-Here is an example of the flow for creating new images and how they are published to Docker Hub via the CI:
+You can monitor (and follow using the `-f` flag) the logs of the snapshot downloader/import container:
 
-You are creating a new image that you call chain-initiator. Name its folder chain-initiator. This folder should contain at least a Dockerfile.
+```shell
+kubectl logs -n oxheadalpha statefulset/rolling-node -c snapshot-downloader -f
+```
 
-The CI on release will pre-pend tezos-k8s to the folder name, so tezos-k8s-chain-initiator. That is what the image will be named on Docker Hub under the oxheadalpha repo. So you would pull/push oxheadalpha/tezos-k8s-chain-initiator. All of our image names will have this format.
+You can view logs for your node using the following command:
 
-In Helm charts that will be using the new image, set in the values.yaml file under the field tezos_k8s_images the value of tezos-k8s-chain-initiator:dev. (Any other images that a chart uses that it just pulls from a remote registry should go under the images field.) This is how the file will be stored in version control. On releases, the CI will set the tags to the release version and publish that to Docker Hub.
+```shell
+kubectl -n oxheadalpha logs -l appType=tezos-node -c tezos-node -f --prefix
+```
 
-When adding an image to Devspace, the image name needs to be the same as it is in values.yaml, i.e. tezos-k8s-chain-initiator. It does not need to be tagged because Devspace will add its own tag. Example:
+IMPORTANT:
 
-images:
-  chain-initiator:
-    image: tezos-k8s-chain-initiator
-    dockerfile: ./chain-initiator/Dockerfile
-    context: ./chain-initiator
-Releases
-Upon release, every component of the tezos-k8s repo will be bumped to that version. This is regardless if there were changes or not to that particular component. This is because tezos-k8s is a monorepo and we'd like to keep the versions consistent across the different components.
+- Although spinning up a mainnet baker is possible, we do not recommend running a mainnet baker at this point in time. Secret keys should be handled via an HSM that should remain online, and the keys should be passed through a k8s secret to k8s. This functionality still needs to be implemented.
+- You should be aware of `minikube` VM's allocated memory. Especially if you use `minikube` for other applications. It may run out of virtual memory say due to having large docker images. Being that snapshots are relatively large and increasing in size as the blockchain grows, when downloading one, you can potentially run out of disk space. The snapshot is deleted after import. According to `minikube start --help`, default allocated space is 20000mb. You can modify this via the `--disk-size` flag. To view the memory usage of the VM, you can ssh into `minikube`.
 
-mkchain will be published to pypi
-Docker images will be deployed to Docker Hub
-Helm charts will be deployed to our Github Pages repo
-See the Github CI file ./.github/workflows/ci.yml for our full CI pipeline.
+  ```shell
+  ❯ minikube ssh
+                          _             _
+              _         _ ( )           ( )
+    ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __
+  /' _ ` _ `\| |/' _ `\| || , <  ( ) ( )| '_`\  /'__`\
+  | ( ) ( ) || || ( ) || || |\`\ | (_) || |_) )(  ___/
+  (_) (_) (_)(_)(_) (_)(_)(_) (_)`\___/'(_,__/'`\____)
+
+  $ df -h
+  Filesystem      Size  Used Avail Use% Mounted on
+  tmpfs           5.2G  593M  4.6G  12% /
+  devtmpfs        2.8G     0  2.8G   0% /dev
+  tmpfs           2.9G     0  2.9G   0% /dev/shm
+  tmpfs           2.9G   50M  2.8G   2% /run
+  tmpfs           2.9G     0  2.9G   0% /sys/fs/cgroup
+  tmpfs           2.9G  8.0K  2.9G   1% /tmp
+  /dev/vda1        17G   12G  4.2G  74% /mnt/vda1
+  ```
+
+# Creating a Private Blockchain
+
+## Zerotier
+
+Zerotier is a VPN service that the Tezos nodes in your cluster will use to communicate with each other.
+
+Create a ZeroTier network:
+
+- Go to https://my.zerotier.com
+- Login with credentials or create a new account
+- Go to https://my.zerotier.com/account to create a new API access token
+- Under `API Access Tokens > New Token`, give a name to your access token and generate it by clicking on the "generate" button. Save the generated access token, e.g. `yEflQt726fjXuSUyQ73WqXvAFoijXkLt` on your computer.
+- Go to https://my.zerotier.com/network
+- Create a new network by clicking on the "Create a Network"
+  button. Save the 16 character generated network
+  id, e.g. `1c33c1ced02a5eee` on your computer.
+
+Set Zerotier environment variables in order to access the network id and access token values with later commands:
+
+```shell
+export ZT_TOKEN=yEflQt726fjXuSUyQ73WqXvAFoijXkLt
+export ZT_NET=1c33c1ced02a5eee
+```
+
+## mkchain
+
+mkchain is a python script that generates Helm values, which Helm then uses to create your Tezos chain on k8s.
+
+Follow _just_ the [Install mkchain](./mkchain/README.md#install-mkchain) step in `./mkchain/README.md`. See there for more info on how you can customize your chain.
+
+Set as an environment variable the name you would like to give to your chain:
+
+```shell
+export CHAIN_NAME=my-chain
+```
+
+NOTE: k8s will throw an error when deploying if your chain name format does not match certain requirements. From k8s: `DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`
+
+Set [unbuffered IO](https://docs.python.org/3.6/using/cmdline.html#envvar-PYTHONUNBUFFERED) for python:
+
+```shell
+export PYTHONUNBUFFERED=x
+```
+
+## Start your private chain
+
+Run `mkchain` to create your Helm values
+
+```shell
+mkchain $CHAIN_NAME --zerotier-network $ZT_NET --zerotier-token $ZT_TOKEN
+```
+
+This will create two files:
+
+1. `./${CHAIN_NAME}_values.yaml`
+2. `./${CHAIN_NAME}_invite_values.yaml`
+
+The former is what you will use to create your chain, and the latter is for invitees to join your chain.
+
+Create a Helm release that will start your chain:
+
+```shell
+helm install $CHAIN_NAME oxheadalpha/tezos-chain \
+--values ./${CHAIN_NAME}_values.yaml \
+--namespace oxheadalpha --create-namespace
+```
+
+Your kubernetes cluster will now be running a series of jobs to
+perform the following tasks:
+
+- get a zerotier ip
+- generate a node identity
+- create a baker account
+- generate a genesis block for your chain
+- start the bootstrap-node baker to bake/validate the chain
+- activate the protocol
+- bake the first block
+
+You can find your node in the oxheadalpha namespace with some status information using kubectl.
+
+```shell
+kubectl -n oxheadalpha get pods -l appType=tezos-node
+```
+
+You can view (and follow using the `-f` flag) logs for your node using the following command:
+
+```shell
+kubectl -n oxheadalpha logs -l appType=tezos-node -c tezos-node -f --prefix
+```
+
+Congratulations! You now have an operational Tezos based permissioned
+chain running one node.
+
+## Adding nodes within the cluster
+
+You can spin up a number of regular peer nodes that don't bake in your cluster by passing `--number-of-nodes N` to `mkchain`. Pass this along with your previously used flags (`--zerotier-network` and `--zerotier-token`). You can use this to both scale up and down.
+
+Or if you previously spun up the chain using `mkchain`, you may adjust
+your setup to an arbitrary number of nodes by updating the "nodes"
+section in the values yaml file.
+
+nodes is a dictionary where each key value pair defines a statefulset
+and a number of instances thereof.  The name (key) defines the name of
+the statefulset and will be the base of the pod names.  The name must be
+DNS compliant or you will get odd errors.  The instances are defined as a
+list because their names are simply `-N` appended to the statefulsetname.
+Said names are traditionally kebab case.
+
+At the statefulset level, the following parameters are allowed:
+
+   - storage_size: the size of the PV
+   - runs: a list of containers to run, e.g. "baker", "endorser", "tezedge"
+   - instances: a list of nodes to fire up, each is a dictionary
+     defining:
+     - `bake_using_account`: The name of the account that should be used
+                             for baking.
+     - `is_bootstrap_node`: Is this node a bootstrap peer.
+     - config: The `config` property should mimic the structure
+               of a node's config.json.
+               Run `tezos-node config --help` for more info.
+
+defaults are filled in for most values.
+
+Each statefulset can run either Nomadic Lab's `tezos-node` or TezEdge's
+`tezedge` node.  Either can support all of the other containers.  If you
+specify `tezedge` as one of the containers to run, then it will be run
+in preference to `tezos-node`.
+
+E.g.:
+
+```
+nodes:
+  baking-node:
+    storage_size: 15Gi
+    runs:
+      - baker
+      - endorser
+      - logger
+    instances:
+      - bake_using_account: baker0
+        is_bootstrap_node: true
+        config:
+          shell:
+            history_mode: rolling
+  full-node:
+    instances:
+      - {}
+      - {}
+  tezedge-full-node:
+    runs:
+      - baker
+      - endorser
+      - logger
+      - tezedge
+    instances:
+      - {}
+      - {}
+      - {}
+```
+
+This will run the following nodes:
+   - `baking-node-0`
+   - `full-node-0`
+   - `full-node-1`
+   - `tezedge-full-node-0`
+   - `tezedge-full-node-1`
+   - `tezedge-full-node-2`
+
+`baking-node-0` will run baker, endorser, and logger containers
+and will be the only bootstrap node.  `full-node-*` are just nodes
+with no extras.  `tezedge-full-node-*` will be tezedge nodes running baker,
+endorser, and logger containers.
+
+To upgrade your Helm release run:
+
+```shell
+helm upgrade $CHAIN_NAME oxheadalpha/tezos-chain \
+--values ./${CHAIN_NAME}_values.yaml \
+--namespace oxheadalpha
+```
+
+The nodes will start up and establish peer-to-peer connections in a full mesh topology.
+
+List all of your running nodes: `kubectl -n oxheadalpha get pods -l appType=tezos-node`
+
+## Adding external nodes to the cluster
+
+External nodes to your local cluster can be added to your network by sharing a yaml file
+generated by the `mkchain` command.
+
+The file is located at: `<CURRENT WORKING DIRECTORY>/${CHAIN_NAME}_invite_values.yaml`
+
+Send this file to the recipients you want to invite.
+
+### On the computer of the joining node
+
+The member needs to:
+
+1. Follow the [prerequisite installation instructions](#installing-prerequisites)
+2. [Start minikube](#start-minikube)
+
+Then run:
+
+```shell
+helm repo add oxheadalpha https://oxheadalpha.github.io/tezos-helm-charts
+
+helm install $CHAIN_NAME oxheadalpha/tezos-chain \
+--values <LOCATION OF ${CHAIN_NAME}_invite_values.yaml> \
+--namespace oxheadalpha --create-namespace
+```
+
+At this point additional nodes will be added in a full mesh
+topology.
+
+Congratulations! You now have a multi-node Tezos based permissioned chain.
+
+On each computer, run this command to check that the nodes have matching heads by comparing their hashes (it may take a minute for the nodes to sync up):
+
+```shell
+kubectl get pod -n oxheadalpha -l appType=tezos-node -o name |
+while read line;
+  do kubectl -n oxheadalpha exec $line -c tezos-node -- /usr/local/bin/tezos-client rpc get /chains/main/blocks/head/hash;
+done
+```
+
+## RPC Authentication
+
+You can optionally spin up an RPC authentication backend allowing trusted users to make RPC requests to your cluster.
+
+Follow the steps [here](./rpc-auth/README.md).
+
+# Indexers
+
+You can optionally spin up a Tezos blockchain indexer that makes querying for information very quick. An indexer puts the chain contents in a database for efficient indexing. Most dapps need it. You can read more about indexers [here](https://wiki.tezosagora.org/build/blockchain-indexers).
+
+Current supported indexers:
+
+- [TzKT](https://github.com/baking-bad/tzkt)
+
+Look [here](https://github.com/oxheadalpha/tezos-k8s/blob/master/charts/tezos/values.yaml#L184-L205) in the Tezos Helm chart's values.yaml `indexer` section for how to deploy an indexer.
+
+You must spin up an archive node in your cluster if you want to your indexer to index it. You would do so by configuring a new node's `history_mode` to be `archive`.
+
+You can also spin up a lone indexer without any Tezos nodes in your cluster, but make sure to point the `rpc_url` field to an accessible Tezos archive node's rpc endpoint.
+
+# Notes
+
+- We recommend using a very nice GUI for your k8s Tezos chain infrastructure called [Lens](https://k8slens.dev/). This allows you to easily see all of the k8s resources that have been spun up as well as to view the logs for your Tezos nodes. Checkout a similar tool called [k9s](https://k9scli.io/) that works in the CLI.
+
+# Development
+
+Please see [DEVELOPMENT.md](./DEVELOPMENT.md)
