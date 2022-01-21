@@ -445,4 +445,4 @@ You can also spin up a lone indexer without any Tezos nodes in your cluster, but
 
 # Development
 
-Please see [DEVELOPMENT.md](./DEVELOPMENT.md)
+Please see  [DEVELOPMENT.md](./DEVELOPMENT.md)
