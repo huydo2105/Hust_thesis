@@ -1,0 +1,3 @@
+[console_scripts]
+mkchain = tqchain.mkchain:main
+
