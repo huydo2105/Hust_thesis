@@ -1,0 +1,1 @@
+./generate_values.sh -b 2 -n 3 -c my-new-chain
