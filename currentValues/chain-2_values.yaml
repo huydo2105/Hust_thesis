@@ -27,6 +27,14 @@ accounts:
     key: edsk3edtZcxaXg7oZeF2Gf37PCZcySP4jzbnvQJwsMHACDy4S1RuAW
     is_bootstrap_baker_account: true
     bootstrap_balance: '4000000000000'
+  harry:
+    key: edpktkVQ5sAhGBaPFVuiQEtrLexFPceehQWx5DZGL835bDCgrBaeoJ
+    is_bootstrap_baker_account: false
+    bootstrap_balance: "4000000000000"
+  zayn:
+    key: edpkuhcnhoYrN6FNBR768xDRcP2FPdGyAEeBLeW6A6hE42fcu4Rvej
+    is_bootstrap_baker_account: false
+    bootstrap_balance: "4000000000000"
 signers:
   tezos-signer-0:
     sign_for_accounts:
@@ -56,7 +64,7 @@ activation:
     blocks_per_stake_snapshot: 4
     cycles_per_voting_period: 1
     hard_gas_limit_per_operation: '1040000'
-    hard_gas_limit_per_block: '5200000'
+    hard_gas_limit_per_block: '5400000'
     proof_of_work_threshold: '-1'
     minimal_stake: '6000000000'
     seed_nonce_revelation_tip: '125000'
