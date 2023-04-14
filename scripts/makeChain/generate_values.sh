@@ -42,3 +42,6 @@ mkchain $CHAIN_NAME --number-of-bakers $NUM_BAKERS --number-of-nodes $NUM_NODES
 
 # Deactivate the virtual environment
 deactivate
+
+# Copy values file to output directory
+cp ${CHAIN_NAME}_values.yaml /home/fetia/IdeaProjects/mkchain/currentValues
