@@ -9,7 +9,7 @@ This tool is a bash script to update a configuration file in YAML format. It acc
 
 ## Usage
 
-Usage: config-updater.sh [-h] [-f FILE] [-a ACTION] [-r NODE] [-m MEMORY] [-c CPU] [-n NUM_INSTANCES] [-o HARD_GAS_LIMIT_PER_OPERATION] [-b HARD_GAS_LIMIT_PER_BLOCK] [-s HARD_STORAGE_LIMIT_PER_OPERATION] [-e ENDORSING_REWARD_PER_SLOT] [-d MINIMAL_BLOCK_DELAY] [-p DOUBLE_BAKING_PUNISHMENT] [-t CONSENSUS_THRESHOLD]
+Usage: protocol.sh [-h] [-f FILE] [-a ACTION] [-r NODE] [-m MEMORY] [-c CPU] [-n NUM_INSTANCES] [-o HARD_GAS_LIMIT_PER_OPERATION] [-b HARD_GAS_LIMIT_PER_BLOCK] [-s HARD_STORAGE_LIMIT_PER_OPERATION] [-e ENDORSING_REWARD_PER_SLOT] [-d MINIMAL_BLOCK_DELAY] [-p DOUBLE_BAKING_PUNISHMENT] [-t CONSENSUS_THRESHOLD]
 
 Options:
 -h Show help message and exit
@@ -30,9 +30,9 @@ Options:
 ## Examples
 
 ### Update memory and CPU limits
-./config-updater.sh -f config.yaml -a update -r node1 -m 4G -c 4
+./protocol.sh -f config.yaml -a update -r node1 -m 4G -c 4
 
 ### Update the hard gas limit per block and hard storage limit per operation
-./config-updater.sh -f config.yaml -a update -r node1 -b 10000000 -s 20000
+./protocol.sh -f config.yaml -a update -r node1 -b 10000000 -s 20000
 ### Update multiple parameters at once
-./config-updater.sh -f config.yaml -a update -r node1 -m 4G -c 4 -n 2 -b 10000000 -s 20000 -e 5000 -d 10 -p 100000000 -t 5000
+./protocol.sh -f config.yaml -a update -r node1 -m 4G -c 4 -n 2 -b 10000000 -s 20000 -e 5000 -d 10 -p 100000000 -t 5000
