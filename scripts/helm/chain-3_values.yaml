@@ -170,4 +170,3 @@ activation:
     zk_rollup_enable: true
     zk_rollup_origination_size: 4000
     zk_rollup_min_pending_to_process: 10
-requirement: safety

@@ -1,18 +1,56 @@
 import os
+import subprocess
 
 import gym
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3 import A2C, SAC, DDPG
 from stable_baselines3.common import results_plotter
+from stable_baselines3.common.evaluation import evaluate_policy
 
 from env import MyEnvironment # import your custom environment
 from state import process_state 
 
+REWARD_BLOCK_SIZE = 0.3
+REWARD_FINANCE = 0.1
+REWARD_NODE_CAPACITY = 0.2
+REWARD_REQUIREMENT = 0.4
+AVERAGE_TRANSACTION_COST = 1001
+TIME_PER_BLOCK = 15
+
+BLOCK_SIZE_MEAN = 6600000
+MEMORY_MEAN = 52009369
+CPU_MEAN = 575000000
+BALANCE_MAX = 40000
+BALANCE_MIN = 0
+BLOCK_SIZE_MAX = 11200000
+BLOCK_SIZE_MIN = 2000000
+REWARD_MAX = 20
+REWARD_MIN = 0.5
+PUNISHMENT_MAX =  2000
+PUNISHMENT_MIN = 5
+MEMORY_MAX =  1073741824 #1024Mi
+CPU_MAX = 1000000000 #1000M
+MEMORY_MIN = 33554432 #32Mi
+CPU_MIN = 150000000 #150M
+MAX_NUM_NODES = 100 
+MIN_NUM_NODES = 4
+
+def get_state(state):
+    d = dict()
+    d["num_nodes"] = int(((state[7] + 1) / 2) * (MAX_NUM_NODES - MIN_NUM_NODES) + MIN_NUM_NODES)
+    d["block_size"] = ((state[1] + 1) / 2) * (BLOCK_SIZE_MAX - BLOCK_SIZE_MIN) + BLOCK_SIZE_MIN
+    d["avg_balance"] = ((state[1] + 1) / 2) * (BALANCE_MAX - BALANCE_MIN) + BALANCE_MIN
+    d["reward_block"] = ((state[2] + 1) / 2) * (REWARD_MAX - REWARD_MIN) + REWARD_MIN
+    d["punishment"] = ((state[3] + 1) / 2) * (PUNISHMENT_MAX - PUNISHMENT_MIN) + PUNISHMENT_MIN 
+    d["tps"] = d["block_size"] / (AVERAGE_TRANSACTION_COST * TIME_PER_BLOCK)
+    return d
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     """
@@ -60,45 +98,19 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                     self.model.save(self.save_path)
 
         return True
-def moving_average(values, window):
-    """
-    Smooth values by doing a moving average
-    :param values: (numpy array)
-    :param window: (int)
-    :return: (numpy array)
-    """
-    weights = np.repeat(1.0, window) / window
-    return np.convolve(values, weights, "valid")
-
-
-def plot_results(log_folder, title="Learning Curve"):
-    """
-    plot the results
-
-    :param log_folder: (str) the save location of the results to plot
-    :param title: (str) the title of the task to plot
-    """
-    x, y = ts2xy(load_results(log_folder), "timesteps")
-    y = moving_average(y, window=50)
-    # Truncate x
-    x = x[len(x) - len(y) :]
-
-    fig = plt.figure(title)
-    plt.plot(x, y)
-    plt.xlabel("Number of Timesteps")
-    plt.ylabel("Rewards")
-    plt.title(title + " Smoothed")
-    plt.show()
 
 models_dir = "models/DDPG"
 logdir = "logs"
-log_dir = "log_dir"
+log_dir = "log_dir/DDPG"
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
 if not os.path.exists(logdir):
     os.makedirs(logdir)
+
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
 
 # Create the environment
 env = MyEnvironment(process_state())
@@ -111,16 +123,24 @@ callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 
 model = DDPG('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
 
-TIMESTEPS = 100
+episode_blocks = []
+throughput = []
 
-iters = 0
-for i in range(30):
+TIMESTEPS = 100
+for i in range(16):
+    # Train the agent
     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name="DDPG", callback=callback)
+    # Save the agent
     model.save(f"{models_dir}/{TIMESTEPS*i}")
 
-plot_results('./log_dir.monitor.csv')
-# Helper from the library
-results_plotter.plot_results(
-    ['./log_dir.monitor.csv'], 1e5, results_plotter.X_TIMESTEPS, "TD3 LunarLander"
-)
-env.close()
+state = get_state(env.state)
+print(state)
+
+# Define the command
+node_command = ['./generate_values.sh', '-b', '1', '-n', str(state['num_nodes'])]
+protocol_command = ['./protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), 'e', str(state['reward_block'])]
+update_command = 
+# Run the command
+subprocess.run(node_command)
+subprocess.run(protocol_command)
+subprocess.run(update_command)
