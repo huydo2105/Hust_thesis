@@ -16,6 +16,7 @@ from stable_baselines3.common.evaluation import evaluate_policy
 
 from env import MyEnvironment # import your custom environment
 from state import process_state 
+from utils.log import log
 
 REWARD_BLOCK_SIZE = 0.3
 REWARD_FINANCE = 0.1
@@ -103,7 +104,7 @@ models_dir = "models/DDPG"
 logdir = "logs"
 log_dir = "log_dir/DDPG"
 
-def run_algo():
+def run_algo(chain_name):
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
@@ -135,13 +136,41 @@ def run_algo():
         model.save(f"{models_dir}/{TIMESTEPS*i}")
 
     state = get_state(env.state)
-    print(state)
 
     # Define the command
-    node_command = ['./generate_values.sh', '-b', '1', '-n', str(state['num_nodes'])]
-    protocol_command = ['./protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), 'e', str(state['reward_block'])]
-    # update_command = 
+    config_file = f"{chain_name}_values.yaml"
+    
+    node_command = ['./script/generate_values.sh', '-b', '1', '-n', str(state['num_nodes']), '-c', chain_name]
+    protocol_command = ['./script/protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), '-e', str(state['reward_block']), '-f', config_file]
+    update_command =  [
+        'helm', 'upgrade',
+        chain_name, 'oxheadalpha/tezos-chain',
+        '--values', f'./{chain_name}_values.yaml',
+        '--namespace', chain_name
+    ]
+
     # Run the command
-    subprocess.run(node_command)
-    subprocess.run(protocol_command)
-    # subprocess.run(update_command)
+    try:
+        # Run the script
+        log("Creating new config file", "INFOR")
+        subprocess.run(node_command, check=True)
+        log("Creating new config file named " + config_file + " successfully!", "SUCCESS")
+        try:
+            # Run the script
+            log("Updating protocol parameter for newly created config file", "INFOR")
+            subprocess.run(protocol_command, check=True)
+            log("Updating protocol parameter for newly created config file successfully!", "SUCCESS")
+            try:
+                log("Updating " + chain_name + " with new protocol parameter" , "INFOR")
+                subprocess.run(update_command, check=True)
+                log("Updating " + chain_name + " with new protocol parameter successfully" , "SUCCESS")
+            except subprocess.CalledProcessError as e:
+                log(f"Command failed: " + str(e), "ERROR")
+        except subprocess.CalledProcessError as e:
+            log(f"Command failed: " + str(e), "ERROR")
+    except subprocess.CalledProcessError as e:
+        log(f"Command failed " + str(e), "ERROR")
+
+        
+
+    

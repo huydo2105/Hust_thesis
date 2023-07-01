@@ -6,7 +6,8 @@ import time
 import datetime
 import yaml
 from colorama import init, Fore, Style
-from algo.ddpg import run_algo
+from ddpg import run_algo
+from utils.log import log
 
 # Initialize colorama
 init(autoreset=True)
@@ -34,22 +35,25 @@ def start_private_chain(chain_name):
     else:
         log(f"Command failed with return code: {result.returncode}", "ERROR")
     
-def log(message, level='INFO'):
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    if level == 'INFO':
-        log_message = f'{Fore.GREEN}[INFO]{Style.RESET_ALL}'
-    elif level == 'SUCCESS':
-        log_message = f'{Fore.CYAN}[SUCCESS]{Style.RESET_ALL}'
-    elif level == 'ERROR':
-        log_message = f'{Fore.RED}[ERROR]{Style.RESET_ALL}'
-    else:
-        log_message = f'{Fore.YELLOW}[{level}]{Style.RESET_ALL}'
-    
-    print(f'{timestamp} {log_message} {message}')
+def stop_chain(chain_name):
+    command = ['minikube', 'stop']
+    try:
+        subprocess.run(command, check=True)
+        log("Minikube stopped successfully.", "SUCCESS")
+    except subprocess.CalledProcessError as e:
+        log(f"Error occurred while stopping Minikube: {e}", "ERROR")
+
+def restart_chain(chain_name):
+    command = ['minikube', 'start']
+    try:
+        subprocess.run(command, check=True)
+        log("Minikube started successfully.", "SUCCESS")
+    except subprocess.CalledProcessError as e:
+        log(f"Error occurred while starting Minikube: {e}", "ERROR")
 
 def monitor_chain_level(chain_name):
-    one_cycle = 16384
+    # one_cycle = 16384
+    one_cycle = 47160
     while True:
         output = subprocess.run(['wget', '-qO-', 'http://localhost:8732/chains/main/blocks/head/'], capture_output=True, text=True)
         if output.returncode == 0:
@@ -58,7 +62,7 @@ def monitor_chain_level(chain_name):
             log("Current level of " + chain_name + " is: " + str(current_level), "INFO")
             if current_level % one_cycle == 0:
                 get_chain_state(chain_name)
-                run_algo()
+                run_algo(chain_name)
         else:
             log("Failed to retrieve chain level. Exiting the loop.", "ERROR")
             break
@@ -86,7 +90,10 @@ def get_chain_state(chain_name):
     with open(values_file, 'r') as file:
         config = yaml.safe_load(file)
 
-    requirement = config['requirement']
+    try:
+        requirement = config['requirement']  
+    except Exception:
+        requirement = None
     hard_gas_limit_per_operation = config['activation']['protocol_parameters']['hard_gas_limit_per_operation']
     hard_gas_limit_per_block = config['activation']['protocol_parameters']['hard_gas_limit_per_block']
     hard_storage_limit_per_operation = config['activation']['protocol_parameters']['hard_storage_limit_per_operation']
@@ -136,8 +143,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     chain_name = sys.argv[1]
-    # log("Starting private chain with name " + chain_name, "INFO")
-    # start_private_chain(chain_name)
+    log("Starting private chain with name " + chain_name, "INFO")
+    start_private_chain(chain_name)
 
     while True:
         monitor_chain_level(chain_name)

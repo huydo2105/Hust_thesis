@@ -268,24 +268,3 @@ class MyEnvironment(gym.Env):
     # Function to call the script
     def call_script():
         subprocess.call(['python', 'path/to/script.py'])
-
-env = MyEnvironment(process_state())
-# It will check your custom environment and output additional warnings if needed
-check_env(env)
-# Box(4,) means that it is a Vector with 4 components
-print("Reset state space shape:", process_state().shape)
-print("Observation space:", env.observation_space)
-print("Shape:", env.observation_space.shape)
-# Discrete(2) means that there is two discrete actions
-print("Action space:", env.action_space)
-
-# The reset method is called at the beginning of an episode
-obs = env.reset()
-# Sample a random action
-action = env.action_space.sample()
-print("Sampled action:", action)
-obs, reward, done, info = env.step(action)
-# Note the obs is a numpy array
-# info is an empty dict for now but can contain any debugging info
-# reward is a scalar
-print(obs.shape, reward, done, info)
