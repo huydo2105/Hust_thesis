@@ -1,0 +1,20 @@
+Requirement: None
+
+Hard gas limit per operation: 1040000
+Hard gas limit per block: 5200000
+Hard storage limit per operation: 60000
+Endorsing reward per slot: 2857
+Minimal block delay: 5
+Double baking punishment: 640000000
+Consensus threshold: 4667
+
+Balances of each node:
+archive-baking-node-0:
+  key: edsk4QFGng4J8mQhcAz8pL9TQdZvSXD6a5oVnn7UMvJaKhRoiiftoH
+  is_bootstrap_baker_account: true
+  bootstrap_balance: 4000000000000
+
+Nodes:
+archive-baking-node:
+  Storage size: 15Gi
+  Instances: 1

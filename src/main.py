@@ -52,8 +52,7 @@ def restart_chain(chain_name):
         log(f"Error occurred while starting Minikube: {e}", "ERROR")
 
 def monitor_chain_level(chain_name):
-    # one_cycle = 16384
-    one_cycle = 47160
+    one_cycle = 18370
     while True:
         output = subprocess.run(['wget', '-qO-', 'http://localhost:8732/chains/main/blocks/head/'], capture_output=True, text=True)
         if output.returncode == 0:
@@ -65,6 +64,7 @@ def monitor_chain_level(chain_name):
                 run_algo(chain_name)
         else:
             log("Failed to retrieve chain level. Exiting the loop.", "ERROR")
+            time.sleep(15)
             break
 
         # Add a delay before checking the chain level again
@@ -143,8 +143,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     chain_name = sys.argv[1]
-    log("Starting private chain with name " + chain_name, "INFO")
-    start_private_chain(chain_name)
+    # log("Starting private chain with name " + chain_name, "INFO")
+    # start_private_chain(chain_name)
 
     while True:
         monitor_chain_level(chain_name)
