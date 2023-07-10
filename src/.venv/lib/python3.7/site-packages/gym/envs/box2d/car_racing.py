@@ -10,7 +10,6 @@ from gym import spaces
 from gym.envs.box2d.car_dynamics import Car
 from gym.error import DependencyNotInstalled, InvalidAction
 from gym.utils import EzPickle
-from gym.utils.renderer import Renderer
 
 try:
     import Box2D
@@ -82,7 +81,7 @@ class FrictionDetector(contactListener):
             return
 
         # inherit tile color from env
-        tile.color = self.env.road_color / 255
+        tile.color[:] = self.env.road_color
         if not obj or "tiles" not in obj.__dict__:
             return
         if begin:
@@ -186,8 +185,6 @@ class CarRacing(gym.Env, EzPickle):
             "human",
             "rgb_array",
             "state_pixels",
-            "single_rgb_array",
-            "single_state_pixels",
         ],
         "render_fps": FPS,
     }
@@ -200,12 +197,20 @@ class CarRacing(gym.Env, EzPickle):
         domain_randomize: bool = False,
         continuous: bool = True,
     ):
-        EzPickle.__init__(self)
+        EzPickle.__init__(
+            self,
+            render_mode,
+            verbose,
+            lap_complete_percent,
+            domain_randomize,
+            continuous,
+        )
         self.continuous = continuous
         self.domain_randomize = domain_randomize
+        self.lap_complete_percent = lap_complete_percent
         self._init_colors()
 
-        self.contactListener_keepref = FrictionDetector(self, lap_complete_percent)
+        self.contactListener_keepref = FrictionDetector(self, self.lap_complete_percent)
         self.world = Box2D.b2World((0, 0), contactListener=self.contactListener_keepref)
         self.screen: Optional[pygame.Surface] = None
         self.surf = None
@@ -239,7 +244,6 @@ class CarRacing(gym.Env, EzPickle):
         )
 
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
 
     def _destroy(self):
         if not self.road:
@@ -475,11 +479,14 @@ class CarRacing(gym.Env, EzPickle):
         self,
         *,
         seed: Optional[int] = None,
-        return_info: bool = False,
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed)
         self._destroy()
+        self.world.contactListener_bug_workaround = FrictionDetector(
+            self, self.lap_complete_percent
+        )
+        self.world.contactListener = self.world.contactListener_bug_workaround
         self.reward = 0.0
         self.prev_reward = 0.0
         self.tile_visited_count = 0
@@ -506,11 +513,9 @@ class CarRacing(gym.Env, EzPickle):
                 )
         self.car = Car(self.world, *self.track[0][1:4])
 
-        self.renderer.reset()
-        if not return_info:
-            return self.step(None)[0]
-        else:
-            return self.step(None)[0], {}
+        if self.render_mode == "human":
+            self.render()
+        return self.step(None)[0], {}
 
     def step(self, action: Union[np.ndarray, int]):
         assert self.car is not None
@@ -533,7 +538,7 @@ class CarRacing(gym.Env, EzPickle):
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
         self.t += 1.0 / FPS
 
-        self.state = self._render("single_state_pixels")
+        self.state = self._render("state_pixels")
 
         step_reward = 0
         terminated = False
@@ -555,16 +560,21 @@ class CarRacing(gym.Env, EzPickle):
                 terminated = True
                 step_reward = -100
 
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
         return self.state, step_reward, terminated, truncated, {}
 
-    def render(self, mode: str = "human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
+    def render(self):
+        if self.render_mode is None:
+            gym.logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
+            )
         else:
-            return self._render(mode)
+            return self._render(self.render_mode)
 
-    def _render(self, mode: str = "human"):
+    def _render(self, mode: str):
         assert mode in self.metadata["render_modes"]
 
         pygame.font.init()
@@ -596,7 +606,7 @@ class CarRacing(gym.Env, EzPickle):
             zoom,
             trans,
             angle,
-            mode not in ["state_pixels", "single_state_pixels"],
+            mode not in ["state_pixels_list", "state_pixels"],
         )
 
         self.surf = pygame.transform.flip(self.surf, False, True)
@@ -618,9 +628,9 @@ class CarRacing(gym.Env, EzPickle):
             self.screen.blit(self.surf, (0, 0))
             pygame.display.flip()
 
-        if mode in {"rgb_array", "single_rgb_array"}:
+        if mode == "rgb_array":
             return self._create_image_array(self.surf, (VIDEO_W, VIDEO_H))
-        elif mode in {"state_pixels", "single_state_pixels"}:
+        elif mode == "state_pixels":
             return self._create_image_array(self.surf, (STATE_W, STATE_H))
         else:
             return self.isopen
@@ -768,6 +778,7 @@ if __name__ == "__main__":
     a = np.array([0.0, 0.0, 0.0])
 
     def register_input():
+        global quit, restart
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
@@ -779,8 +790,9 @@ if __name__ == "__main__":
                 if event.key == pygame.K_DOWN:
                     a[2] = +0.8  # set 1.0 for wheels to block to zero rotation
                 if event.key == pygame.K_RETURN:
-                    global restart
                     restart = True
+                if event.key == pygame.K_ESCAPE:
+                    quit = True
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
@@ -792,11 +804,13 @@ if __name__ == "__main__":
                 if event.key == pygame.K_DOWN:
                     a[2] = 0
 
-    env = CarRacing()
-    env.render()
+            if event.type == pygame.QUIT:
+                quit = True
 
-    isopen = True
-    while isopen:
+    env = CarRacing(render_mode="human")
+
+    quit = False
+    while not quit:
         env.reset()
         total_reward = 0.0
         steps = 0
@@ -809,7 +823,6 @@ if __name__ == "__main__":
                 print("\naction " + str([f"{x:+0.2f}" for x in a]))
                 print(f"step {steps} total_reward {total_reward:+0.2f}")
             steps += 1
-            isopen = env.render()
-            if terminated or truncated or restart or isopen is False:
+            if terminated or truncated or restart or quit:
                 break
     env.close()

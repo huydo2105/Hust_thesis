@@ -280,6 +280,11 @@ print("Shape:", env.observation_space.shape)
 print("Action space:", env.action_space)
 
 # The reset method is called at the beginning of an episode
+# Set the random seed
+random.seed(1)
+np.random.seed(1)
+
+# Reset the environment
 obs = env.reset()
 # Sample a random action
 action = env.action_space.sample()

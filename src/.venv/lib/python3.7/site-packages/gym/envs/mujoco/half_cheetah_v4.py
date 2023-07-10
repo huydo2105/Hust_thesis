@@ -137,8 +137,6 @@ class HalfCheetahEnv(MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -151,7 +149,14 @@ class HalfCheetahEnv(MujocoEnv, utils.EzPickle):
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            forward_reward_weight,
+            ctrl_cost_weight,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs
+        )
 
         self._forward_reward_weight = forward_reward_weight
 
@@ -200,7 +205,8 @@ class HalfCheetahEnv(MujocoEnv, utils.EzPickle):
             "reward_ctrl": -ctrl_cost,
         }
 
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
         return observation, reward, terminated, False, info
 
     def _get_obs(self):

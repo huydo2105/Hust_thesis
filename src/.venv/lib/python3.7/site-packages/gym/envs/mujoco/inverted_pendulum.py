@@ -11,14 +11,12 @@ class InvertedPendulumEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 25,
     }
 
     def __init__(self, **kwargs):
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
         observation_space = Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float64)
         MuJocoPyEnv.__init__(
             self,
@@ -32,10 +30,11 @@ class InvertedPendulumEnv(MuJocoPyEnv, utils.EzPickle):
         reward = 1.0
         self.do_simulation(a, self.frame_skip)
 
-        self.renderer.render_step()
-
         ob = self._get_obs()
         terminated = bool(not np.isfinite(ob).all() or (np.abs(ob[1]) > 0.2))
+
+        if self.render_mode == "human":
+            self.render()
         return ob, reward, terminated, False, {}
 
     def reset_model(self):

@@ -123,14 +123,12 @@ class ReacherEnv(MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 50,
     }
 
     def __init__(self, **kwargs):
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
         observation_space = Box(low=-np.inf, high=np.inf, shape=(11,), dtype=np.float64)
         MujocoEnv.__init__(
             self, "reacher.xml", 2, observation_space=observation_space, **kwargs
@@ -141,9 +139,12 @@ class ReacherEnv(MujocoEnv, utils.EzPickle):
         reward_dist = -np.linalg.norm(vec)
         reward_ctrl = -np.square(a).sum()
         reward = reward_dist + reward_ctrl
+
         self.do_simulation(a, self.frame_skip)
+        if self.render_mode == "human":
+            self.render()
+
         ob = self._get_obs()
-        self.renderer.render_step()
         return (
             ob,
             reward,

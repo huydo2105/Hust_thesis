@@ -6,7 +6,6 @@ import numpy as np
 import gym.error
 from gym import logger
 from gym.spaces.space import Space
-from gym.utils import seeding
 
 
 def _short_repr(arr: np.ndarray) -> str:
@@ -57,7 +56,7 @@ class Box(Space[np.ndarray]):
         high: Union[SupportsFloat, np.ndarray],
         shape: Optional[Sequence[int]] = None,
         dtype: Type = np.float32,
-        seed: Optional[Union[int, seeding.RandomNumberGenerator]] = None,
+        seed: Optional[Union[int, np.random.Generator]] = None,
     ):
         r"""Constructor of :class:`Box`.
 
@@ -139,6 +138,11 @@ class Box(Space[np.ndarray]):
         """Has stricter type than gym.Space - never None."""
         return self._shape
 
+    @property
+    def is_np_flattenable(self):
+        """Checks whether this space can be flattened to a :class:`spaces.Box`."""
+        return True
+
     def is_bounded(self, manner: str = "both") -> bool:
         """Checks whether the box is bounded in some sense.
 
@@ -160,7 +164,9 @@ class Box(Space[np.ndarray]):
         elif manner == "above":
             return above
         else:
-            raise ValueError("manner is not in {'below', 'above', 'both'}")
+            raise ValueError(
+                f"manner is not in {{'below', 'above', 'both'}}, actual value: {manner}"
+            )
 
     def sample(self, mask: None = None) -> np.ndarray:
         r"""Generates a single random sample inside the Box.
@@ -219,7 +225,10 @@ class Box(Space[np.ndarray]):
         """Return boolean specifying if x is a valid member of this space."""
         if not isinstance(x, np.ndarray):
             logger.warn("Casting input x to numpy array.")
-            x = np.asarray(x, dtype=self.dtype)
+            try:
+                x = np.asarray(x, dtype=self.dtype)
+            except (ValueError, TypeError):
+                return False
 
         return bool(
             np.can_cast(x.dtype, self.dtype)
@@ -232,7 +241,7 @@ class Box(Space[np.ndarray]):
         """Convert a batch of samples from this space to a JSONable data type."""
         return np.array(sample_n).tolist()
 
-    def from_jsonable(self, sample_n: Sequence[SupportsFloat]) -> List[np.ndarray]:
+    def from_jsonable(self, sample_n: Sequence[Union[float, int]]) -> List[np.ndarray]:
         """Convert a JSONable data type to a batch of samples from this space."""
         return [np.asarray(sample) for sample in sample_n]
 
@@ -248,10 +257,11 @@ class Box(Space[np.ndarray]):
         return f"Box({self.low_repr}, {self.high_repr}, {self.shape}, {self.dtype})"
 
     def __eq__(self, other) -> bool:
-        """Check whether `other` is equivalent to this instance."""
+        """Check whether `other` is equivalent to this instance. Doesn't check dtype equivalence."""
         return (
             isinstance(other, Box)
             and (self.shape == other.shape)
+            # and (self.dtype == other.dtype)
             and np.allclose(self.low, other.low)
             and np.allclose(self.high, other.high)
         )

@@ -11,8 +11,6 @@ class InvertedDoublePendulumEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -26,12 +24,10 @@ class InvertedDoublePendulumEnv(MuJocoPyEnv, utils.EzPickle):
             observation_space=observation_space,
             **kwargs
         )
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
 
     def step(self, action):
         self.do_simulation(action, self.frame_skip)
-
-        self.renderer.render_step()
 
         ob = self._get_obs()
         x, _, y = self.sim.data.site_xpos[0]
@@ -41,6 +37,9 @@ class InvertedDoublePendulumEnv(MuJocoPyEnv, utils.EzPickle):
         alive_bonus = 10
         r = alive_bonus - dist_penalty - vel_penalty
         terminated = bool(y <= 1)
+
+        if self.render_mode == "human":
+            self.render()
         return ob, r, terminated, False, {}
 
     def _get_obs(self):

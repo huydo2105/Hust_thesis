@@ -11,8 +11,6 @@ class HalfCheetahEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -22,20 +20,21 @@ class HalfCheetahEnv(MuJocoPyEnv, utils.EzPickle):
         MuJocoPyEnv.__init__(
             self, "half_cheetah.xml", 5, observation_space=observation_space, **kwargs
         )
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
 
     def step(self, action):
         xposbefore = self.sim.data.qpos[0]
         self.do_simulation(action, self.frame_skip)
         xposafter = self.sim.data.qpos[0]
 
-        self.renderer.render_step()
-
         ob = self._get_obs()
         reward_ctrl = -0.1 * np.square(action).sum()
         reward_run = (xposafter - xposbefore) / self.dt
         reward = reward_ctrl + reward_run
         terminated = False
+
+        if self.render_mode == "human":
+            self.render()
         return (
             ob,
             reward,

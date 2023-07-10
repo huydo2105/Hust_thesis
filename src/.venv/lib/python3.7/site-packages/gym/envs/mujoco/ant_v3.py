@@ -15,8 +15,6 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -34,7 +32,19 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            xml_file,
+            ctrl_cost_weight,
+            contact_cost_weight,
+            healthy_reward,
+            terminate_when_unhealthy,
+            healthy_z_range,
+            contact_force_range,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs
+        )
 
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
@@ -118,8 +128,6 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
         rewards = forward_reward + healthy_reward
         costs = ctrl_cost + contact_cost
 
-        self.renderer.render_step()
-
         reward = rewards - costs
         terminated = self.terminated
         observation = self._get_obs()
@@ -136,6 +144,8 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
             "forward_reward": forward_reward,
         }
 
+        if self.render_mode == "human":
+            self.render()
         return observation, reward, terminated, False, info
 
     def _get_obs(self):

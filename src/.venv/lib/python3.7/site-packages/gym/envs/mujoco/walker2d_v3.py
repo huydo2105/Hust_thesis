@@ -18,8 +18,6 @@ class Walker2dEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 125,
     }
@@ -37,7 +35,19 @@ class Walker2dEnv(MuJocoPyEnv, utils.EzPickle):
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            xml_file,
+            forward_reward_weight,
+            ctrl_cost_weight,
+            healthy_reward,
+            terminate_when_unhealthy,
+            healthy_z_range,
+            healthy_angle_range,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs
+        )
 
         self._forward_reward_weight = forward_reward_weight
         self._ctrl_cost_weight = ctrl_cost_weight
@@ -112,8 +122,6 @@ class Walker2dEnv(MuJocoPyEnv, utils.EzPickle):
         x_position_after = self.sim.data.qpos[0]
         x_velocity = (x_position_after - x_position_before) / self.dt
 
-        self.renderer.render_step()
-
         ctrl_cost = self.control_cost(action)
         forward_reward = self._forward_reward_weight * x_velocity
         healthy_reward = self.healthy_reward
@@ -128,6 +136,9 @@ class Walker2dEnv(MuJocoPyEnv, utils.EzPickle):
             "x_position": x_position_after,
             "x_velocity": x_velocity,
         }
+
+        if self.render_mode == "human":
+            self.render()
 
         return observation, reward, terminated, False, info
 

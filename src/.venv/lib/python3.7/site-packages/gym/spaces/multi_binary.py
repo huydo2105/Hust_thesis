@@ -4,7 +4,6 @@ from typing import Optional, Sequence, Tuple, Union
 import numpy as np
 
 from gym.spaces.space import Space
-from gym.utils import seeding
 
 
 class MultiBinary(Space[np.ndarray]):
@@ -27,7 +26,7 @@ class MultiBinary(Space[np.ndarray]):
     def __init__(
         self,
         n: Union[np.ndarray, Sequence[int], int],
-        seed: Optional[Union[int, seeding.RandomNumberGenerator]] = None,
+        seed: Optional[Union[int, np.random.Generator]] = None,
     ):
         """Constructor of :class:`MultiBinary` space.
 
@@ -51,6 +50,11 @@ class MultiBinary(Space[np.ndarray]):
         """Has stricter type than gym.Space - never None."""
         return self._shape  # type: ignore
 
+    @property
+    def is_np_flattenable(self):
+        """Checks whether this space can be flattened to a :class:`spaces.Box`."""
+        return True
+
     def sample(self, mask: Optional[np.ndarray] = None) -> np.ndarray:
         """Generates a single random sample from this space.
 
@@ -58,7 +62,8 @@ class MultiBinary(Space[np.ndarray]):
 
         Args:
             mask: An optional np.ndarray to mask samples with expected shape of ``space.shape``.
-                Where mask == 0 then the samples will be 0.
+                For mask == 0 then the samples will be 0 and mask == 1 then random samples will be generated.
+                The expected mask shape is the space shape and mask dtype is `np.int8`.
 
         Returns:
             Sampled values from space
@@ -74,11 +79,13 @@ class MultiBinary(Space[np.ndarray]):
                 mask.shape == self.shape
             ), f"The expected shape of the mask is {self.shape}, actual shape: {mask.shape}"
             assert np.all(
-                np.logical_or(mask == 0, mask == 1)
-            ), f"All values of a mask should be 0 or 1, actual values: {mask}"
+                (mask == 0) | (mask == 1) | (mask == 2)
+            ), f"All values of a mask should be 0, 1 or 2, actual values: {mask}"
 
-            return mask * self.np_random.integers(
-                low=0, high=2, size=self.n, dtype=self.dtype
+            return np.where(
+                mask == 2,
+                self.np_random.integers(low=0, high=2, size=self.n, dtype=self.dtype),
+                mask.astype(self.dtype),
             )
 
         return self.np_random.integers(low=0, high=2, size=self.n, dtype=self.dtype)
@@ -87,9 +94,12 @@ class MultiBinary(Space[np.ndarray]):
         """Return boolean specifying if x is a valid member of this space."""
         if isinstance(x, Sequence):
             x = np.array(x)  # Promote list to array for contains check
-        if self.shape != x.shape:
-            return False
-        return ((x == 0) | (x == 1)).all()
+
+        return bool(
+            isinstance(x, np.ndarray)
+            and self.shape == x.shape
+            and np.all((x == 0) | (x == 1))
+        )
 
     def to_jsonable(self, sample_n) -> list:
         """Convert a batch of samples from this space to a JSONable data type."""
@@ -97,7 +107,7 @@ class MultiBinary(Space[np.ndarray]):
 
     def from_jsonable(self, sample_n) -> list:
         """Convert a JSONable data type to a batch of samples from this space."""
-        return [np.asarray(sample) for sample in sample_n]
+        return [np.asarray(sample, self.dtype) for sample in sample_n]
 
     def __repr__(self) -> str:
         """Gives a string representation of this space."""

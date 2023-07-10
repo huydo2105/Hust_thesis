@@ -143,8 +143,6 @@ class HopperEnv(MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 125,
     }
@@ -162,7 +160,19 @@ class HopperEnv(MujocoEnv, utils.EzPickle):
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            forward_reward_weight,
+            ctrl_cost_weight,
+            healthy_reward,
+            terminate_when_unhealthy,
+            healthy_state_range,
+            healthy_z_range,
+            healthy_angle_range,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs
+        )
 
         self._forward_reward_weight = forward_reward_weight
 
@@ -259,7 +269,8 @@ class HopperEnv(MujocoEnv, utils.EzPickle):
             "x_velocity": x_velocity,
         }
 
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
         return observation, reward, terminated, False, info
 
     def reset_model(self):

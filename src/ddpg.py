@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -131,9 +131,10 @@ def run_algo(chain_name):
     TIMESTEPS = 100
     for i in range(16):
         # Train the agent
-        model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name="DDPG", callback=callback)
+
+        model.learn(total_timesteps=TIMESTEPS)
         # Save the agent
-        model.save(f"{models_dir}/{TIMESTEPS*i}")
+        # model.save(f"{models_dir}/{TIMESTEPS*i}")
 
     state = get_state(env.state)
 
@@ -171,6 +172,3 @@ def run_algo(chain_name):
     except subprocess.CalledProcessError as e:
         log(f"Command failed " + str(e), "ERROR")
 
-        
-
-    

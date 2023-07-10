@@ -11,8 +11,6 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 25,
     }
@@ -22,7 +20,7 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
         MuJocoPyEnv.__init__(
             self, "swimmer.xml", 4, observation_space=observation_space, **kwargs
         )
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
 
     def step(self, a):
         ctrl_cost_coeff = 0.0001
@@ -30,12 +28,14 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
         self.do_simulation(a, self.frame_skip)
         xposafter = self.sim.data.qpos[0]
 
-        self.renderer.render_step()
-
         reward_fwd = (xposafter - xposbefore) / self.dt
         reward_ctrl = -ctrl_cost_coeff * np.square(a).sum()
         reward = reward_fwd + reward_ctrl
         ob = self._get_obs()
+
+        if self.render_mode == "human":
+            self.render()
+
         return (
             ob,
             reward,

@@ -133,14 +133,12 @@ class PusherEnv(MujocoEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
 
     def __init__(self, **kwargs):
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
         observation_space = Box(low=-np.inf, high=np.inf, shape=(23,), dtype=np.float64)
         MujocoEnv.__init__(
             self, "pusher.xml", 5, observation_space=observation_space, **kwargs
@@ -156,8 +154,10 @@ class PusherEnv(MujocoEnv, utils.EzPickle):
         reward = reward_dist + 0.1 * reward_ctrl + 0.5 * reward_near
 
         self.do_simulation(a, self.frame_skip)
+        if self.render_mode == "human":
+            self.render()
+
         ob = self._get_obs()
-        self.renderer.render_step()
         return (
             ob,
             reward,

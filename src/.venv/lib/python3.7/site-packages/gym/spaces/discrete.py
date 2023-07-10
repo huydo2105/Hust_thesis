@@ -4,7 +4,6 @@ from typing import Optional, Union
 import numpy as np
 
 from gym.spaces.space import Space
-from gym.utils import seeding
 
 
 class Discrete(Space[int]):
@@ -21,7 +20,7 @@ class Discrete(Space[int]):
     def __init__(
         self,
         n: int,
-        seed: Optional[Union[int, seeding.RandomNumberGenerator]] = None,
+        seed: Optional[Union[int, np.random.Generator]] = None,
         start: int = 0,
     ):
         r"""Constructor of :class:`Discrete` space.
@@ -39,6 +38,11 @@ class Discrete(Space[int]):
         self.n = int(n)
         self.start = int(start)
         super().__init__((), np.int64, seed)
+
+    @property
+    def is_np_flattenable(self):
+        """Checks whether this space can be flattened to a :class:`spaces.Box`."""
+        return True
 
     def sample(self, mask: Optional[np.ndarray] = None) -> int:
         """Generates a single random sample from this space.
@@ -81,18 +85,19 @@ class Discrete(Space[int]):
         if isinstance(x, int):
             as_int = x
         elif isinstance(x, (np.generic, np.ndarray)) and (
-            x.dtype.char in np.typecodes["AllInteger"] and x.shape == ()
+            np.issubdtype(x.dtype, np.integer) and x.shape == ()
         ):
             as_int = int(x)  # type: ignore
         else:
             return False
+
         return self.start <= as_int < self.start + self.n
 
     def __repr__(self) -> str:
         """Gives a string representation of this space."""
         if self.start != 0:
-            return "Discrete(%d, start=%d)" % (self.n, self.start)
-        return "Discrete(%d)" % self.n
+            return f"Discrete({self.n}, start={self.start})"
+        return f"Discrete({self.n})"
 
     def __eq__(self, other) -> bool:
         """Check whether ``other`` is equivalent to this instance."""
@@ -110,8 +115,6 @@ class Discrete(Space[int]):
         Args:
             state: The new state
         """
-        super().__setstate__(state)
-
         # Don't mutate the original state
         state = dict(state)
 
@@ -120,5 +123,4 @@ class Discrete(Space[int]):
         if "start" not in state:
             state["start"] = 0
 
-        # Update our state
-        self.__dict__.update(state)
+        super().__setstate__(state)

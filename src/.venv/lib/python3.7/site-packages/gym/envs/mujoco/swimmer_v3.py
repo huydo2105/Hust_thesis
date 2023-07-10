@@ -15,8 +15,6 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 25,
     }
@@ -30,7 +28,15 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            xml_file,
+            forward_reward_weight,
+            ctrl_cost_weight,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs
+        )
 
         self._forward_reward_weight = forward_reward_weight
         self._ctrl_cost_weight = ctrl_cost_weight
@@ -63,8 +69,6 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
         self.do_simulation(action, self.frame_skip)
         xy_position_after = self.sim.data.qpos[0:2].copy()
 
-        self.renderer.render_step()
-
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         x_velocity, y_velocity = xy_velocity
 
@@ -83,6 +87,9 @@ class SwimmerEnv(MuJocoPyEnv, utils.EzPickle):
             "y_velocity": y_velocity,
             "forward_reward": forward_reward,
         }
+
+        if self.render_mode == "human":
+            self.render()
 
         return observation, reward, False, False, info
 

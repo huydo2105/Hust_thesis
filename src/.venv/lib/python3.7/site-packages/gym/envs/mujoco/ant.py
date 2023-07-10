@@ -11,8 +11,6 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 20,
     }
@@ -24,14 +22,12 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
         MuJocoPyEnv.__init__(
             self, "ant.xml", 5, observation_space=observation_space, **kwargs
         )
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
 
     def step(self, a):
         xposbefore = self.get_body_com("torso")[0]
         self.do_simulation(a, self.frame_skip)
         xposafter = self.get_body_com("torso")[0]
-
-        self.renderer.render_step()
 
         forward_reward = (xposafter - xposbefore) / self.dt
         ctrl_cost = 0.5 * np.square(a).sum()
@@ -46,6 +42,9 @@ class AntEnv(MuJocoPyEnv, utils.EzPickle):
         )
         terminated = not not_terminated
         ob = self._get_obs()
+
+        if self.render_mode == "human":
+            self.render()
         return (
             ob,
             reward,

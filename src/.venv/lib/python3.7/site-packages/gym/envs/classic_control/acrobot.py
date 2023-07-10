@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from numpy import cos, pi, sin
 
-from gym import core, spaces
+from gym import core, logger, spaces
 from gym.error import DependencyNotInstalled
 
 __copyright__ = "Copyright 2013, RLPy http://acl.mit.edu/RLPy"
@@ -21,7 +21,6 @@ __author__ = "Christoph Dann <cdann@cdann.de>"
 # SOURCE:
 # https://github.com/rlpy/rlpy/blob/master/rlpy/Domains/Acrobot.py
 from gym.envs.classic_control import utils
-from gym.utils.renderer import Renderer
 
 
 class AcrobotEnv(core.Env):
@@ -137,7 +136,7 @@ class AcrobotEnv(core.Env):
     """
 
     metadata = {
-        "render_modes": ["human", "rgb_array", "single_rgb_array"],
+        "render_modes": ["human", "rgb_array"],
         "render_fps": 15,
     }
 
@@ -168,7 +167,6 @@ class AcrobotEnv(core.Env):
 
     def __init__(self, render_mode: Optional[str] = None):
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
         self.screen = None
         self.clock = None
         self.isopen = True
@@ -180,13 +178,7 @@ class AcrobotEnv(core.Env):
         self.action_space = spaces.Discrete(3)
         self.state = None
 
-    def reset(
-        self,
-        *,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None
-    ):
+    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
         # Note that if you use custom reset bounds, it may lead to out-of-bound
         # state/observations.
@@ -197,12 +189,9 @@ class AcrobotEnv(core.Env):
             np.float32
         )
 
-        self.renderer.reset()
-        self.renderer.render_step()
-        if not return_info:
-            return self._get_ob()
-        else:
-            return self._get_ob(), {}
+        if self.render_mode == "human":
+            self.render()
+        return self._get_ob(), {}
 
     def step(self, a):
         s = self.state
@@ -229,7 +218,8 @@ class AcrobotEnv(core.Env):
         terminated = self._terminal()
         reward = -1.0 if not terminated else 0.0
 
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
         return (self._get_ob(), reward, terminated, False, {})
 
     def _get_ob(self):
@@ -286,14 +276,15 @@ class AcrobotEnv(core.Env):
         ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
         return dtheta1, dtheta2, ddtheta1, ddtheta2, 0.0
 
-    def render(self, mode="human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
-        else:
-            return self._render(mode)
+    def render(self):
+        if self.render_mode is None:
+            logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
+            )
+            return
 
-    def _render(self, mode="human"):
-        assert mode in self.metadata["render_modes"]
         try:
             import pygame
             from pygame import gfxdraw
@@ -304,12 +295,12 @@ class AcrobotEnv(core.Env):
 
         if self.screen is None:
             pygame.init()
-            if mode == "human":
+            if self.render_mode == "human":
                 pygame.display.init()
                 self.screen = pygame.display.set_mode(
                     (self.SCREEN_DIM, self.SCREEN_DIM)
                 )
-            else:  # mode in {"rgb_array", "single_rgb_array"}
+            else:  # mode in "rgb_array"
                 self.screen = pygame.Surface((self.SCREEN_DIM, self.SCREEN_DIM))
         if self.clock is None:
             self.clock = pygame.time.Clock()
@@ -365,24 +356,23 @@ class AcrobotEnv(core.Env):
         surf = pygame.transform.flip(surf, False, True)
         self.screen.blit(surf, (0, 0))
 
-        if mode == "human":
+        if self.render_mode == "human":
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
             pygame.display.flip()
 
-        elif mode in {"rgb_array", "single_rgb_array"}:
+        elif self.render_mode == "rgb_array":
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
             )
 
+    def close(self):
+        if self.screen is not None:
+            import pygame
 
-def close(self):
-    if self.screen is not None:
-        import pygame
-
-        pygame.display.quit()
-        pygame.quit()
-        self.isopen = False
+            pygame.display.quit()
+            pygame.quit()
+            self.isopen = False
 
 
 def wrap(x, m, M):

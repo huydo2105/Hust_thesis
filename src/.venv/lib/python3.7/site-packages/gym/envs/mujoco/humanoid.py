@@ -17,8 +17,6 @@ class HumanoidEnv(MuJocoPyEnv, utils.EzPickle):
             "human",
             "rgb_array",
             "depth_array",
-            "single_rgb_array",
-            "single_depth_array",
         ],
         "render_fps": 67,
     }
@@ -30,7 +28,7 @@ class HumanoidEnv(MuJocoPyEnv, utils.EzPickle):
         MuJocoPyEnv.__init__(
             self, "humanoid.xml", 5, observation_space=observation_space, **kwargs
         )
-        utils.EzPickle.__init__(self)
+        utils.EzPickle.__init__(self, **kwargs)
 
     def _get_obs(self):
         data = self.sim.data
@@ -50,8 +48,6 @@ class HumanoidEnv(MuJocoPyEnv, utils.EzPickle):
         self.do_simulation(a, self.frame_skip)
         pos_after = mass_center(self.model, self.sim)
 
-        self.renderer.render_step()
-
         alive_bonus = 5.0
         data = self.sim.data
         lin_vel_cost = 1.25 * (pos_after - pos_before) / self.dt
@@ -61,6 +57,9 @@ class HumanoidEnv(MuJocoPyEnv, utils.EzPickle):
         reward = lin_vel_cost - quad_ctrl_cost - quad_impact_cost + alive_bonus
         qpos = self.sim.data.qpos
         terminated = bool((qpos[2] < 1.0) or (qpos[2] > 2.0))
+
+        if self.render_mode == "human":
+            self.render()
         return (
             self._get_obs(),
             reward,

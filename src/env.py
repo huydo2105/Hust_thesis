@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 from state import process_state 
@@ -51,12 +51,13 @@ class MyEnvironment(gym.Env):
         )
         
         
-    def reset(self):
+    def reset(self, seed=None):
         # Reset the environment
         # Return the initial state as the observation
         self.state = process_state()
         self.state = self.state.astype(np.float32)
-        return self.state
+        info = {}  # Create an empty info dictionary
+        return self.state, info  # Return the state and info as a tuple
 
     def is_safe_shard(self, num_nodes):
         num_malicious_nodes = np.random.randint(1, 10)
@@ -147,8 +148,11 @@ class MyEnvironment(gym.Env):
         self.memory_history.append(memory)
         self.cpu_history.append(cpu)
         self.requirement_history.append(requirement)
-        
-        return new_state, reward, done, {}
+
+         # Compute other values (truncated, info) if necessary
+        truncated = False  # Set truncated to False if not applicable
+        info = {}  # Create an empty info dictionary if not applicable
+        return new_state, reward, done, truncated, info
 
     def get_history(self):
         return self.balance_history
@@ -268,3 +272,26 @@ class MyEnvironment(gym.Env):
     # Function to call the script
     def call_script():
         subprocess.call(['python', 'path/to/script.py'])
+
+# env = MyEnvironment(process_state())
+# # It will check your custom environment and output additional warnings if needed
+# check_env(env)
+# # Box(4,) means that it is a Vector with 4 components
+# print("Reset state space shape:", process_state().shape)
+# print("Observation space:", env.observation_space)
+# print("Shape:", env.observation_space.shape)
+# # Discrete(2) means that there is two discrete actions
+# print("Action space:", env.action_space)
+
+# # The reset method is called at the beginning of an episode
+
+# # Reset the environment
+# obs = env.reset()
+# # Sample a random action
+# action = env.action_space.sample()
+# print("Sampled action:", action)
+# obs, reward, done, truncated, info = env.step(action)
+# # Note the obs is a numpy array
+# # info is an empty dict for now but can contain any debugging info
+# # reward is a scalar
+# print(obs.shape, reward, done, info)

@@ -6,7 +6,6 @@ import numpy as np
 import gym
 from gym import spaces
 from gym.error import DependencyNotInstalled
-from gym.utils.renderer import Renderer
 
 
 def cmp(a, b):
@@ -112,7 +111,7 @@ class BlackjackEnv(gym.Env):
     """
 
     metadata = {
-        "render_modes": ["human", "rgb_array", "single_rgb_array"],
+        "render_modes": ["human", "rgb_array"],
         "render_fps": 4,
     }
 
@@ -130,7 +129,6 @@ class BlackjackEnv(gym.Env):
         self.sab = sab
 
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
 
     def step(self, action):
         assert self.action_space.contains(action)
@@ -158,7 +156,9 @@ class BlackjackEnv(gym.Env):
             ):
                 # Natural gives extra points, but doesn't autowin. Legacy implementation
                 reward = 1.5
-        self.renderer.render_step()
+
+        if self.render_mode == "human":
+            self.render()
         return self._get_obs(), reward, terminated, False, {}
 
     def _get_obs(self):
@@ -167,7 +167,6 @@ class BlackjackEnv(gym.Env):
     def reset(
         self,
         seed: Optional[int] = None,
-        return_info: bool = False,
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed)
@@ -186,22 +185,18 @@ class BlackjackEnv(gym.Env):
         else:
             self.dealer_top_card_value_str = str(dealer_card_value)
 
-        self.renderer.reset()
-        self.renderer.render_step()
+        if self.render_mode == "human":
+            self.render()
+        return self._get_obs(), {}
 
-        if not return_info:
-            return self._get_obs()
-        else:
-            return self._get_obs(), {}
-
-    def render(self, mode="human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
-        else:
-            return self._render(mode)
-
-    def _render(self, mode):
-        assert mode in self.metadata["render_modes"]
+    def render(self):
+        if self.render_mode is None:
+            gym.logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
+            )
+            return
 
         try:
             import pygame
@@ -221,7 +216,7 @@ class BlackjackEnv(gym.Env):
 
         if not hasattr(self, "screen"):
             pygame.init()
-            if mode == "human":
+            if self.render_mode == "human":
                 pygame.display.init()
                 self.screen = pygame.display.set_mode((screen_width, screen_height))
             else:
@@ -303,7 +298,7 @@ class BlackjackEnv(gym.Env):
                     player_sum_text_rect.bottom + spacing // 2,
                 ),
             )
-        if mode == "human":
+        if self.render_mode == "human":
             pygame.event.pump()
             pygame.display.update()
             self.clock.tick(self.metadata["render_fps"])
