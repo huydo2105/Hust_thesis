@@ -7,7 +7,7 @@ node_config_network:
   chain_name: chain-3
   genesis:
     protocol: Ps9mPmXaRzmzk35gbAYNCAw6UXdE2qoABTHbN2oEEc1qM7CwT9P
-    timestamp: '2023-07-08T14:34:48.012983+00:00'
+    timestamp: '2023-07-01T13:58:14.954841+00:00'
   activation_account_name: archive-baking-node-0
 zerotier_config:
   zerotier_network: null
@@ -24,9 +24,15 @@ protocols:
 bootstrap_peers: []
 accounts:
   archive-baking-node-0:
-    key: edsk3TmX1iRqMq3hMaNmA7ahGuoPvvQknLJRQNA9R7c6KUD33Y9EAo
+    key: edskRct6PKTooCVi5BxjybuVkAL3YKrcKV5TXEdd2p13557TN81VhpjsXJTWxfPVMBjQYgHCtKFzZafhxPibDasNuzGPQusJjL
     is_bootstrap_baker_account: true
     bootstrap_balance: '4000000000000'
+  nodeA:
+    key: edskRct6PKTooCVi5BxjybuVkAL3YKrcKV5TXEdd2p13557TN81VhpjsXJTWxfPVMBjQYgHCtKFzZafhxPibDasNuzGPQusJjL
+  nodeB:
+    key: edskRpm2mUhvoUjHjXgMoDRxMKhtKfww1ixmWiHCWhHuMEEbGzdnz8Ks4vgarKDtxok7HmrEo1JzkXkdkvyw7Rtw6BNtSd7MJ7
+  nodeC:
+    key: edskRtJazwLQo7PLeoRaxFPEGoYgtDRFSfdTd6i4s98YnKmuZmPtci3nSfAYaxqb6d1atzVTbTTXifeNy8sZjA15nV37D1Ce9b
 signers:
   tezos-signer-0:
     sign_for_accounts:

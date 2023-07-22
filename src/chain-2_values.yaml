@@ -24,9 +24,19 @@ protocols:
 bootstrap_peers: []
 accounts:
   archive-baking-node-0:
-    key: edsk3vrxrWoYarWHjpy9DNciqYXgCH3CLXMyDSxaSyLMysJ336MAwF
+  # tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya
+    key: edskS8TcwFowyEtKdUtc2hr34gHEAXvS6pbKGBR2QPvWNKDDeqjFcndkHfaSRkbyUa5YZ2jEHngDA3hZQzdLxd8gerM1fpzFQP
     is_bootstrap_baker_account: true
     bootstrap_balance: '4000000000000'
+  nodeA:
+    # tz1KrF9u57E2cNepecgi98XHcKGL5VFWeA1d
+    key: edpktkVQ5sAhGBaPFVuiQEtrLexFPceehQWx5DZGL835bDCgrBaeoJ
+  nodeB:
+  # tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
+    key: edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn
+  nodeC:
+    # tz1hWvP1HXRAmBWQU4ewYUeNNrEdz2sUKDNJ
+    key: edpkv13FgbJz9serZYhBwsDwsVU9UK3mtPAsuKan4mAKUBie5jGKpY
 signers:
   tezos-signer-0:
     sign_for_accounts:

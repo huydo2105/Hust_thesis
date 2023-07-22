@@ -153,16 +153,16 @@ def run_algo(chain_name):
     # Run the command
     try:
         # Run the script
-        log("Creating new config file", "INFOR")
+        log("Creating new config file", "INFO")
         subprocess.run(node_command, check=True)
         log("Creating new config file named " + config_file + " successfully!", "SUCCESS")
         try:
             # Run the script
-            log("Updating protocol parameter for newly created config file", "INFOR")
+            log("Updating protocol parameter for newly created config file", "INFO")
             subprocess.run(protocol_command, check=True)
             log("Updating protocol parameter for newly created config file successfully!", "SUCCESS")
             try:
-                log("Updating " + chain_name + " with new protocol parameter" , "INFOR")
+                log("Updating " + chain_name + " with new protocol parameter" , "INFO")
                 subprocess.run(update_command, check=True)
                 log("Updating " + chain_name + " with new protocol parameter successfully" , "SUCCESS")
             except subprocess.CalledProcessError as e:

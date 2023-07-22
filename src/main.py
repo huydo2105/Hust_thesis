@@ -34,7 +34,7 @@ def monitor_chain_level(chains):
 def get_chain_state(chain_name):
     values_file = f"./{chain_name}_values.yaml"
     write_file = f"./{chain_name}_values.txt"
-    log("Reading chain state from " + values_file, "INFOR")
+    log("Reading chain state from " + values_file, "INFO")
     # Parse YAML file and extract required fields
     with open(values_file, 'r') as file:
         config = yaml.safe_load(file)
@@ -71,7 +71,7 @@ def get_chain_state(chain_name):
                     node_info += f"  Resources:\n{resources_str}\n"
 
     # Save results in a new file
-    log("Writing chain state to " + write_file, "INFOR")
+    log("Writing chain state to " + write_file, "INFO")
     with open(write_file, 'w') as file:
         file.write(f"Requirement: {requirement}\n\n")
         file.write(f"Hard gas limit per operation: {hard_gas_limit_per_operation}\n")
@@ -97,10 +97,9 @@ def port_forward_chain(chain_name, port):
             pod_status = get_pod_status(chain_name)
 
         log(f"Pod for chain '{chain_name}' is running.", "INFO")
-        log(f"Initiating port forwarding for chain '{chain_name}' on port {port}.", "INFOR")
+        log(f"Initiating port forwarding for chain '{chain_name}' on port {port}.", "INFO")
         process = subprocess.Popen(command, start_new_session=True)
         if process.poll() is None:
-            log(f"Port forwarding initiated for chain '{chain_name}' on port {port}.", "SUCCESS")
             log(f"Port forwarding successful for chain '{chain_name}' on port {port}.", "SUCCESS")
         else:
             log(f"Error occurred while starting port forwarding for chain '{chain_name}' on port {port}", "ERROR")
@@ -128,7 +127,7 @@ if __name__ == '__main__':
     num_chains = int(sys.argv[1])
     chain_names = sys.argv[2:2+num_chains]
 
-    port = 8733  # Starting port number
+    port = 8732  # Starting port number
 
     chains = {}  # Dictionary to store chain name and port
 

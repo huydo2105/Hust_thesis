@@ -1,0 +1,708 @@
+parameter (or (or (or (pair %admin_update_leader (address %leader) (string %shard)) (pair %propose_new_leader (address %new_leader) (string %shard))) (or (unit %select_leaders) (string %self_elected))) (or (or (pair %update_endpoint (string %endpoint) (string %shard)) (string %update_leader)) (or (pair %update_num_nodes (nat %num_nodes) (string %shard)) (or (pair %update_sharding_policy (string %policy) (string %shard)) (string %vote_new_leader)))));
+storage   (pair (address %admin) (pair (map %endpoints string string) (pair (map %leaders string address) (pair (big_map %metadata string bytes) (pair (map %num_nodes string nat) (pair (map %proposed_leaders string (set address)) (pair (map %sharding_policies string string) (map %voting string (pair (address %new_leader) (pair (address %proposer) (set %votes address)))))))))));
+code
+  {
+    UNPAIR;     # @parameter : @storage
+    IF_LEFT
+      {
+        IF_LEFT
+          {
+            IF_LEFT
+              {
+                # == admin_update_leader ==
+                # assert sp.sender == self.data.admin, 'NotAdmin' # @parameter%admin_update_leader : @storage
+                DUP 2;      # @storage : @parameter%admin_update_leader : @storage
+                CAR;        # address : @parameter%admin_update_leader : @storage
+                SENDER;     # @sender : address : @parameter%admin_update_leader : @storage
+                COMPARE;    # int : @parameter%admin_update_leader : @storage
+                EQ;         # bool : @parameter%admin_update_leader : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NotAdmin"; # string : @parameter%admin_update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%admin_update_leader : @storage
+                # self.data.leaders = sp.update_map(self.data.leaders, params.shard, sp.some(params.leader)) # @parameter%admin_update_leader : @storage
+                DUP 2;      # @storage : @parameter%admin_update_leader : @storage
+                GET 5;      # map string address : @parameter%admin_update_leader : @storage
+                DUP 2;      # @parameter%admin_update_leader : map string address : @parameter%admin_update_leader : @storage
+                CAR;        # address : map string address : @parameter%admin_update_leader : @storage
+                SOME;       # option address : map string address : @parameter%admin_update_leader : @storage
+                DUP 3;      # @parameter%admin_update_leader : option address : map string address : @parameter%admin_update_leader : @storage
+                CDR;        # string : option address : map string address : @parameter%admin_update_leader : @storage
+                UPDATE;     # map string address : @parameter%admin_update_leader : @storage
+                DIG 2;      # @storage : map string address : @parameter%admin_update_leader
+                SWAP;       # map string address : @storage : @parameter%admin_update_leader
+                UPDATE 5;   # @storage : @parameter%admin_update_leader
+                SWAP;       # @parameter%admin_update_leader : @storage
+                # self.data.proposed_leaders = sp.update_map(self.data.proposed_leaders, params.shard, sp.some(sp.set([params.leader]))) # @parameter%admin_update_leader : @storage
+                DUP 2;      # @storage : @parameter%admin_update_leader : @storage
+                GET 11;     # map string (set address) : @parameter%admin_update_leader : @storage
+                EMPTY_SET address; # set address : map string (set address) : @parameter%admin_update_leader : @storage
+                PUSH bool True; # bool : set address : map string (set address) : @parameter%admin_update_leader : @storage
+                DUP 4;      # @parameter%admin_update_leader : bool : set address : map string (set address) : @parameter%admin_update_leader : @storage
+                CAR;        # address : bool : set address : map string (set address) : @parameter%admin_update_leader : @storage
+                UPDATE;     # set address : map string (set address) : @parameter%admin_update_leader : @storage
+                SOME;       # option (set address) : map string (set address) : @parameter%admin_update_leader : @storage
+                DUP 3;      # @parameter%admin_update_leader : option (set address) : map string (set address) : @parameter%admin_update_leader : @storage
+                CDR;        # string : option (set address) : map string (set address) : @parameter%admin_update_leader : @storage
+                UPDATE;     # map string (set address) : @parameter%admin_update_leader : @storage
+                DIG 2;      # @storage : map string (set address) : @parameter%admin_update_leader
+                SWAP;       # map string (set address) : @storage : @parameter%admin_update_leader
+                UPDATE 11;  # @storage : @parameter%admin_update_leader
+                SWAP;       # @parameter%admin_update_leader : @storage
+                # assert self.data.leaders[params.shard] == params.leader # @parameter%admin_update_leader : @storage
+                DUP;        # @parameter%admin_update_leader : @parameter%admin_update_leader : @storage
+                CAR;        # address : @parameter%admin_update_leader : @storage
+                DUP 3;      # @storage : address : @parameter%admin_update_leader : @storage
+                GET 5;      # map string address : address : @parameter%admin_update_leader : @storage
+                DUP 3;      # @parameter%admin_update_leader : map string address : address : @parameter%admin_update_leader : @storage
+                CDR;        # string : map string address : address : @parameter%admin_update_leader : @storage
+                GET;        # option address : address : @parameter%admin_update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 69; # int : address : @parameter%admin_update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : address : @parameter%admin_update_leader : @storage
+                COMPARE;    # int : @parameter%admin_update_leader : @storage
+                EQ;         # bool : @parameter%admin_update_leader : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "WrongCondition: self.data.leaders[params.shard] == params.leader"; # string : @parameter%admin_update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%admin_update_leader : @storage
+                # assert self.data.proposed_leaders[params.shard].contains(params.leader) # @parameter%admin_update_leader : @storage
+                DUP 2;      # @storage : @parameter%admin_update_leader : @storage
+                GET 11;     # map string (set address) : @parameter%admin_update_leader : @storage
+                DUP 2;      # @parameter%admin_update_leader : map string (set address) : @parameter%admin_update_leader : @storage
+                CDR;        # string : map string (set address) : @parameter%admin_update_leader : @storage
+                GET;        # option (set address) : @parameter%admin_update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 70; # int : @parameter%admin_update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : @parameter%admin_update_leader : @storage
+                SWAP;       # @parameter%admin_update_leader : @some : @storage
+                CAR;        # address : @some : @storage
+                MEM;        # bool : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "WrongCondition: self.data.proposed_leaders[params.shard].contains(params.leader)"; # string : @storage
+                    FAILWITH;   # FAILED
+                  }; # @storage
+              }
+              {
+                # == propose_new_leader ==
+                # assert sp.amount == sp.tez(6000), 'InsufficientStake' # @parameter%propose_new_leader : @storage
+                PUSH mutez 6000000000; # mutez : @parameter%propose_new_leader : @storage
+                AMOUNT;     # @amount : mutez : @parameter%propose_new_leader : @storage
+                COMPARE;    # int : @parameter%propose_new_leader : @storage
+                EQ;         # bool : @parameter%propose_new_leader : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "InsufficientStake"; # string : @parameter%propose_new_leader : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%propose_new_leader : @storage
+                # proposal = sp.record(new_leader = params.new_leader, proposer = sp.sender, votes = sp.set([sp.sender])) # @parameter%propose_new_leader : @storage
+                EMPTY_SET address; # set address : @parameter%propose_new_leader : @storage
+                PUSH bool True; # bool : set address : @parameter%propose_new_leader : @storage
+                SENDER;     # @sender : bool : set address : @parameter%propose_new_leader : @storage
+                UPDATE;     # set address : @parameter%propose_new_leader : @storage
+                SENDER;     # @sender : set address : @parameter%propose_new_leader : @storage
+                DUP 3;      # @parameter%propose_new_leader : @sender : set address : @parameter%propose_new_leader : @storage
+                CAR;        # address : @sender : set address : @parameter%propose_new_leader : @storage
+                PAIR 3;     # pair address (pair @sender (set address)) : @parameter%propose_new_leader : @storage
+                # self.data.voting = sp.update_map(self.data.voting, params.shard, sp.some(proposal)) # pair address (pair @sender (set address)) : @parameter%propose_new_leader : @storage
+                DUP 3;      # @storage : pair address (pair @sender (set address)) : @parameter%propose_new_leader : @storage
+                GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : pair address (pair @sender (set address)) : @parameter%propose_new_leader : @storage
+                SWAP;       # pair address (pair @sender (set address)) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%propose_new_leader : @storage
+                SOME;       # option (pair address (pair @sender (set address))) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%propose_new_leader : @storage
+                DIG 2;      # @parameter%propose_new_leader : option (pair address (pair @sender (set address))) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @storage
+                CDR;        # string : option (pair address (pair @sender (set address))) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @storage
+                UPDATE;     # map string (pair address (pair address (set address))) : @storage
+                UPDATE 14;  # @storage
+              }; # @storage
+            NIL operation; # list operation : @storage
+          }
+          {
+            IF_LEFT
+              {
+                # == select_leaders ==
+                # assert sp.sender == self.data.admin, 'NotAdmin' # @parameter%select_leaders : @storage
+                DUP 2;      # @storage : @parameter%select_leaders : @storage
+                CAR;        # address : @parameter%select_leaders : @storage
+                SENDER;     # @sender : address : @parameter%select_leaders : @storage
+                COMPARE;    # int : @parameter%select_leaders : @storage
+                EQ;         # bool : @parameter%select_leaders : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NotAdmin"; # string : @parameter%select_leaders : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%select_leaders : @storage
+                # x = 0 # @parameter%select_leaders : @storage
+                PUSH int 0; # int : @parameter%select_leaders : @storage
+                # for shard in self.data.proposed_leaders.items(): ... # int : @parameter%select_leaders : @storage
+                NIL operation; # list operation : int : @parameter%select_leaders : @storage
+                DUP 4;      # @storage : list operation : int : @parameter%select_leaders : @storage
+                GET 11;     # map string (set address) : list operation : int : @parameter%select_leaders : @storage
+                ITER
+                  {
+                    # proposed_leaders = shard.value.elements() # pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    NIL address; # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    DUP 2;      # pair string (set address) : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    CDR;        # set address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    ITER
+                      {
+                        CONS;       # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                      }; # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    NIL address; # list address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    SWAP;       # list address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    ITER
+                      {
+                        CONS;       # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                      }; # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    # for leader in proposed_leaders: ... # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    DUP;        # list address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    ITER
+                      {
+                        # if x == 0: # address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                        PUSH int 0; # int : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                        DUP 6;      # int : int : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                        COMPARE;    # int : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                        EQ;         # bool : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                        IF
+                          {
+                            # selected_leader = leader
+                            # self.data.leaders = sp.update_map(self.data.leaders, shard.key, sp.some(selected_leader)) # address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            DUP 7;      # @storage : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            GET 5;      # map string address : address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            SWAP;       # address : map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            SOME;       # option address : map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            DUP 4;      # pair string (set address) : option address : map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            CAR;        # string : option address : map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            UPDATE;     # map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            DIG 6;      # @storage : map string address : list address : pair string (set address) : list operation : int : @parameter%select_leaders
+                            SWAP;       # map string address : @storage : list address : pair string (set address) : list operation : int : @parameter%select_leaders
+                            UPDATE 5;   # @storage : list address : pair string (set address) : list operation : int : @parameter%select_leaders
+                            DUG 5;      # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            # x += 1 # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            DIG 3;      # int : list address : pair string (set address) : list operation : @parameter%select_leaders : @storage
+                            PUSH int 1; # int : int : list address : pair string (set address) : list operation : @parameter%select_leaders : @storage
+                            ADD;        # int : list address : pair string (set address) : list operation : @parameter%select_leaders : @storage
+                            DUG 3;      # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                          }
+                          {
+                            # sp.send(leader, sp.tez(6000)) # address : list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                            DIG 3;      # list operation : address : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            SWAP;       # address : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            CONTRACT unit; # option (contract unit) : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            IF_NONE
+                              {
+                                PUSH int 108; # int : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                                FAILWITH;   # FAILED
+                              }
+                              {}; # @some : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            PUSH mutez 6000000000; # mutez : @some : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            UNIT;       # unit : mutez : @some : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            TRANSFER_TOKENS; # operation : list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            CONS;       # list operation : list address : pair string (set address) : int : @parameter%select_leaders : @storage
+                            DUG 2;      # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                          }; # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                      }; # list address : pair string (set address) : list operation : int : @parameter%select_leaders : @storage
+                    DROP 2;     # list operation : int : @parameter%select_leaders : @storage
+                  }; # list operation : int : @parameter%select_leaders : @storage
+                SWAP;       # int : list operation : @parameter%select_leaders : @storage
+                DROP;       # list operation : @parameter%select_leaders : @storage
+                SWAP;       # @parameter%select_leaders : list operation : @storage
+                DROP;       # list operation : @storage
+              }
+              {
+                # == self_elected ==
+                # assert sp.amount == sp.tez(6000), 'InsufficientStake' # @parameter%self_elected : @storage
+                PUSH mutez 6000000000; # mutez : @parameter%self_elected : @storage
+                AMOUNT;     # @amount : mutez : @parameter%self_elected : @storage
+                COMPARE;    # int : @parameter%self_elected : @storage
+                EQ;         # bool : @parameter%self_elected : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "InsufficientStake"; # string : @parameter%self_elected : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%self_elected : @storage
+                SWAP;       # @storage : @parameter%self_elected
+                # self.data.proposed_leaders[params.shard].add(sp.sender) # @storage : @parameter%self_elected
+                DUP;        # @storage : @storage : @parameter%self_elected
+                GET 11;     # map string (set address) : @storage : @parameter%self_elected
+                DUP;        # map string (set address) : map string (set address) : @storage : @parameter%self_elected
+                DUP 4;      # @parameter%self_elected : map string (set address) : map string (set address) : @storage : @parameter%self_elected
+                DUP;        # @parameter%self_elected : @parameter%self_elected : map string (set address) : map string (set address) : @storage : @parameter%self_elected
+                DUG 2;      # @parameter%self_elected : map string (set address) : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                GET;        # option (set address) : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                IF_NONE
+                  {
+                    PUSH int 93; # int : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                PUSH bool True; # bool : @some : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                SENDER;     # @sender : bool : @some : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                UPDATE;     # set address : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                SOME;       # option (set address) : @parameter%self_elected : map string (set address) : @storage : @parameter%self_elected
+                SWAP;       # @parameter%self_elected : option (set address) : map string (set address) : @storage : @parameter%self_elected
+                UPDATE;     # map string (set address) : @storage : @parameter%self_elected
+                UPDATE 11;  # @storage : @parameter%self_elected
+                # assert self.data.proposed_leaders[params.shard].contains(sp.sender) # @storage : @parameter%self_elected
+                DUP;        # @storage : @storage : @parameter%self_elected
+                GET 11;     # map string (set address) : @storage : @parameter%self_elected
+                DIG 2;      # @parameter%self_elected : map string (set address) : @storage
+                GET;        # option (set address) : @storage
+                IF_NONE
+                  {
+                    PUSH int 94; # int : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : @storage
+                SENDER;     # @sender : @some : @storage
+                MEM;        # bool : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "WrongCondition: self.data.proposed_leaders[params.shard].contains(sp.sender)"; # string : @storage
+                    FAILWITH;   # FAILED
+                  }; # @storage
+                NIL operation; # list operation : @storage
+              }; # list operation : @storage
+          }; # list operation : @storage
+      }
+      {
+        IF_LEFT
+          {
+            IF_LEFT
+              {
+                # == update_endpoint ==
+                # assert (sp.sender == self.data.admin) or (sp.sender == self.data.leaders[params.shard]), 'NotAdminNorLeaders' # @parameter%update_endpoint : @storage
+                DUP 2;      # @storage : @parameter%update_endpoint : @storage
+                CAR;        # address : @parameter%update_endpoint : @storage
+                SENDER;     # @sender : address : @parameter%update_endpoint : @storage
+                COMPARE;    # int : @parameter%update_endpoint : @storage
+                EQ;         # bool : @parameter%update_endpoint : @storage
+                IF
+                  {
+                    PUSH bool True; # bool : @parameter%update_endpoint : @storage
+                  }
+                  {
+                    DUP 2;      # @storage : @parameter%update_endpoint : @storage
+                    GET 5;      # map string address : @parameter%update_endpoint : @storage
+                    DUP 2;      # @parameter%update_endpoint : map string address : @parameter%update_endpoint : @storage
+                    CDR;        # string : map string address : @parameter%update_endpoint : @storage
+                    GET;        # option address : @parameter%update_endpoint : @storage
+                    IF_NONE
+                      {
+                        PUSH int 74; # int : @parameter%update_endpoint : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : @parameter%update_endpoint : @storage
+                    SENDER;     # @sender : @some : @parameter%update_endpoint : @storage
+                    COMPARE;    # int : @parameter%update_endpoint : @storage
+                    EQ;         # bool : @parameter%update_endpoint : @storage
+                  }; # bool : @parameter%update_endpoint : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NotAdminNorLeaders"; # string : @parameter%update_endpoint : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%update_endpoint : @storage
+                # self.data.endpoints = sp.update_map(self.data.endpoints, params.shard, sp.some(params.endpoint)) # @parameter%update_endpoint : @storage
+                DUP 2;      # @storage : @parameter%update_endpoint : @storage
+                GET 3;      # map string string : @parameter%update_endpoint : @storage
+                DUP 2;      # @parameter%update_endpoint : map string string : @parameter%update_endpoint : @storage
+                CAR;        # string : map string string : @parameter%update_endpoint : @storage
+                SOME;       # option string : map string string : @parameter%update_endpoint : @storage
+                DUP 3;      # @parameter%update_endpoint : option string : map string string : @parameter%update_endpoint : @storage
+                CDR;        # string : option string : map string string : @parameter%update_endpoint : @storage
+                UPDATE;     # map string string : @parameter%update_endpoint : @storage
+                DIG 2;      # @storage : map string string : @parameter%update_endpoint
+                SWAP;       # map string string : @storage : @parameter%update_endpoint
+                UPDATE 3;   # @storage : @parameter%update_endpoint
+                SWAP;       # @parameter%update_endpoint : @storage
+                # assert self.data.endpoints[params.shard] == params.endpoint # @parameter%update_endpoint : @storage
+                DUP;        # @parameter%update_endpoint : @parameter%update_endpoint : @storage
+                CAR;        # string : @parameter%update_endpoint : @storage
+                DUP 3;      # @storage : string : @parameter%update_endpoint : @storage
+                GET 3;      # map string string : string : @parameter%update_endpoint : @storage
+                DIG 2;      # @parameter%update_endpoint : map string string : string : @storage
+                CDR;        # string : map string string : string : @storage
+                GET;        # option string : string : @storage
+                IF_NONE
+                  {
+                    PUSH int 76; # int : string : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : string : @storage
+                COMPARE;    # int : @storage
+                EQ;         # bool : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "WrongCondition: self.data.endpoints[params.shard] == params.endpoint"; # string : @storage
+                    FAILWITH;   # FAILED
+                  }; # @storage
+                NIL operation; # list operation : @storage
+              }
+              {
+                # == update_leader ==
+                # shard_votes = self.data.voting[params.shard] # @parameter%update_leader : @storage
+                DUP 2;      # @storage : @parameter%update_leader : @storage
+                GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%update_leader : @storage
+                DUP 2;      # @parameter%update_leader : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%update_leader : @storage
+                GET;        # option (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 130; # int : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : @parameter%update_leader : @storage
+                # malicious_leader = self.data.leaders[params.shard] # @some : @parameter%update_leader : @storage
+                DUP 3;      # @storage : @some : @parameter%update_leader : @storage
+                GET 5;      # map string address : @some : @parameter%update_leader : @storage
+                DUP 3;      # @parameter%update_leader : map string address : @some : @parameter%update_leader : @storage
+                GET;        # option address : @some : @parameter%update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 131; # int : @some : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : @some : @parameter%update_leader : @storage
+                # new_leader = shard_votes.new_leader # @some : @some : @parameter%update_leader : @storage
+                DUP 2;      # @some : @some : @some : @parameter%update_leader : @storage
+                CAR;        # address : @some : @some : @parameter%update_leader : @storage
+                # assert (sp.sender == shard_votes.proposer) or (sp.sender == self.data.admin), 'NotProposerNorAdmin' # address : @some : @some : @parameter%update_leader : @storage
+                DUP 3;      # @some : address : @some : @some : @parameter%update_leader : @storage
+                GET 3;      # address : address : @some : @some : @parameter%update_leader : @storage
+                SENDER;     # @sender : address : address : @some : @some : @parameter%update_leader : @storage
+                COMPARE;    # int : address : @some : @some : @parameter%update_leader : @storage
+                EQ;         # bool : address : @some : @some : @parameter%update_leader : @storage
+                IF
+                  {
+                    PUSH bool True; # bool : address : @some : @some : @parameter%update_leader : @storage
+                  }
+                  {
+                    DUP 5;      # @storage : address : @some : @some : @parameter%update_leader : @storage
+                    CAR;        # address : address : @some : @some : @parameter%update_leader : @storage
+                    SENDER;     # @sender : address : address : @some : @some : @parameter%update_leader : @storage
+                    COMPARE;    # int : address : @some : @some : @parameter%update_leader : @storage
+                    EQ;         # bool : address : @some : @some : @parameter%update_leader : @storage
+                  }; # bool : address : @some : @some : @parameter%update_leader : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NotProposerNorAdmin"; # string : address : @some : @some : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }; # address : @some : @some : @parameter%update_leader : @storage
+                # assert self.data.voting.contains(params.shard), 'NoProposal' # address : @some : @some : @parameter%update_leader : @storage
+                DUP 5;      # @storage : address : @some : @some : @parameter%update_leader : @storage
+                GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : address : @some : @some : @parameter%update_leader : @storage
+                DUP 5;      # @parameter%update_leader : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : address : @some : @some : @parameter%update_leader : @storage
+                MEM;        # bool : address : @some : @some : @parameter%update_leader : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NoProposal"; # string : address : @some : @some : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }; # address : @some : @some : @parameter%update_leader : @storage
+                # if sp.len(shard_votes.votes) > ((2 * self.data.num_nodes[params.shard]) / 3): # address : @some : @some : @parameter%update_leader : @storage
+                PUSH nat 3; # nat : address : @some : @some : @parameter%update_leader : @storage
+                DUP 6;      # @storage : nat : address : @some : @some : @parameter%update_leader : @storage
+                GET 9;      # map string nat : nat : address : @some : @some : @parameter%update_leader : @storage
+                DUP 6;      # @parameter%update_leader : map string nat : nat : address : @some : @some : @parameter%update_leader : @storage
+                GET;        # option nat : nat : address : @some : @some : @parameter%update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 136; # int : nat : address : @some : @some : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : nat : address : @some : @some : @parameter%update_leader : @storage
+                PUSH nat 2; # nat : @some : nat : address : @some : @some : @parameter%update_leader : @storage
+                MUL;        # nat : nat : address : @some : @some : @parameter%update_leader : @storage
+                EDIV;       # option (pair nat nat) : address : @some : @some : @parameter%update_leader : @storage
+                IF_NONE
+                  {
+                    PUSH int 136; # int : address : @some : @some : @parameter%update_leader : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {
+                    CAR;        # nat : address : @some : @some : @parameter%update_leader : @storage
+                  }; # nat : address : @some : @some : @parameter%update_leader : @storage
+                DIG 3;      # @some : nat : address : @some : @parameter%update_leader : @storage
+                GET 4;      # set address : nat : address : @some : @parameter%update_leader : @storage
+                SIZE;       # nat : nat : address : @some : @parameter%update_leader : @storage
+                COMPARE;    # int : address : @some : @parameter%update_leader : @storage
+                GT;         # bool : address : @some : @parameter%update_leader : @storage
+                IF
+                  {
+                    # sp.send(malicious_leader, sp.tez(3000)) # address : @some : @parameter%update_leader : @storage
+                    NIL operation; # list operation : address : @some : @parameter%update_leader : @storage
+                    DIG 2;      # @some : list operation : address : @parameter%update_leader : @storage
+                    CONTRACT unit; # option (contract unit) : list operation : address : @parameter%update_leader : @storage
+                    IF_NONE
+                      {
+                        PUSH int 137; # int : list operation : address : @parameter%update_leader : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : list operation : address : @parameter%update_leader : @storage
+                    PUSH mutez 3000000000; # mutez : @some : list operation : address : @parameter%update_leader : @storage
+                    UNIT;       # unit : mutez : @some : list operation : address : @parameter%update_leader : @storage
+                    TRANSFER_TOKENS; # operation : list operation : address : @parameter%update_leader : @storage
+                    CONS;       # list operation : address : @parameter%update_leader : @storage
+                    # sp.send(new_leader, sp.tez(3000)) # list operation : address : @parameter%update_leader : @storage
+                    DUP 2;      # address : list operation : address : @parameter%update_leader : @storage
+                    CONTRACT unit; # option (contract unit) : list operation : address : @parameter%update_leader : @storage
+                    IF_NONE
+                      {
+                        PUSH int 138; # int : list operation : address : @parameter%update_leader : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : list operation : address : @parameter%update_leader : @storage
+                    PUSH mutez 3000000000; # mutez : @some : list operation : address : @parameter%update_leader : @storage
+                    UNIT;       # unit : mutez : @some : list operation : address : @parameter%update_leader : @storage
+                    TRANSFER_TOKENS; # operation : list operation : address : @parameter%update_leader : @storage
+                    CONS;       # list operation : address : @parameter%update_leader : @storage
+                    # self.data.leaders = sp.update_map(self.data.leaders, params.shard, sp.some(new_leader)) # list operation : address : @parameter%update_leader : @storage
+                    DUP 4;      # @storage : list operation : address : @parameter%update_leader : @storage
+                    GET 5;      # map string address : list operation : address : @parameter%update_leader : @storage
+                    DIG 2;      # address : map string address : list operation : @parameter%update_leader : @storage
+                    SOME;       # option address : map string address : list operation : @parameter%update_leader : @storage
+                    DUP 4;      # @parameter%update_leader : option address : map string address : list operation : @parameter%update_leader : @storage
+                    UPDATE;     # map string address : list operation : @parameter%update_leader : @storage
+                    DIG 3;      # @storage : map string address : list operation : @parameter%update_leader
+                    SWAP;       # map string address : @storage : list operation : @parameter%update_leader
+                    UPDATE 5;   # @storage : list operation : @parameter%update_leader
+                    # del self.data.voting[params.shard] # @storage : list operation : @parameter%update_leader
+                    DUP;        # @storage : @storage : list operation : @parameter%update_leader
+                    GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @storage : list operation : @parameter%update_leader
+                    NONE (pair address (pair address (set address))); # option (pair address (pair address (set address))) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @storage : list operation : @parameter%update_leader
+                    DIG 4;      # @parameter%update_leader : option (pair address (pair address (set address))) : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @storage : list operation
+                    UPDATE;     # map string (pair address (pair address (set address))) : @storage : list operation
+                    UPDATE 14;  # @storage : list operation
+                    SWAP;       # list operation : @storage
+                  }
+                  {
+                    SWAP;       # @some : address : @parameter%update_leader : @storage
+                    DROP;       # address : @parameter%update_leader : @storage
+                    SWAP;       # @parameter%update_leader : address : @storage
+                    DROP;       # address : @storage
+                    # sp.send(new_leader, sp.tez(3000)) # address : @storage
+                    CONTRACT unit; # option (contract unit) : @storage
+                    IF_NONE
+                      {
+                        PUSH int 142; # int : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : @storage
+                    NIL operation; # list operation : @some : @storage
+                    SWAP;       # @some : list operation : @storage
+                    PUSH mutez 3000000000; # mutez : @some : list operation : @storage
+                    UNIT;       # unit : mutez : @some : list operation : @storage
+                    TRANSFER_TOKENS; # operation : list operation : @storage
+                    CONS;       # list operation : @storage
+                  }; # list operation : @storage
+              }; # list operation : @storage
+          }
+          {
+            IF_LEFT
+              {
+                # == update_num_nodes ==
+                # assert (sp.sender == self.data.admin) or (sp.sender == self.data.leaders[params.shard]), 'NotAdminNorLeaders' # @parameter%update_num_nodes : @storage
+                DUP 2;      # @storage : @parameter%update_num_nodes : @storage
+                CAR;        # address : @parameter%update_num_nodes : @storage
+                SENDER;     # @sender : address : @parameter%update_num_nodes : @storage
+                COMPARE;    # int : @parameter%update_num_nodes : @storage
+                EQ;         # bool : @parameter%update_num_nodes : @storage
+                IF
+                  {
+                    PUSH bool True; # bool : @parameter%update_num_nodes : @storage
+                  }
+                  {
+                    DUP 2;      # @storage : @parameter%update_num_nodes : @storage
+                    GET 5;      # map string address : @parameter%update_num_nodes : @storage
+                    DUP 2;      # @parameter%update_num_nodes : map string address : @parameter%update_num_nodes : @storage
+                    CDR;        # string : map string address : @parameter%update_num_nodes : @storage
+                    GET;        # option address : @parameter%update_num_nodes : @storage
+                    IF_NONE
+                      {
+                        PUSH int 80; # int : @parameter%update_num_nodes : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : @parameter%update_num_nodes : @storage
+                    SENDER;     # @sender : @some : @parameter%update_num_nodes : @storage
+                    COMPARE;    # int : @parameter%update_num_nodes : @storage
+                    EQ;         # bool : @parameter%update_num_nodes : @storage
+                  }; # bool : @parameter%update_num_nodes : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "NotAdminNorLeaders"; # string : @parameter%update_num_nodes : @storage
+                    FAILWITH;   # FAILED
+                  }; # @parameter%update_num_nodes : @storage
+                # self.data.num_nodes = sp.update_map(self.data.num_nodes, params.shard, sp.some(params.num_nodes)) # @parameter%update_num_nodes : @storage
+                DUP 2;      # @storage : @parameter%update_num_nodes : @storage
+                GET 9;      # map string nat : @parameter%update_num_nodes : @storage
+                DUP 2;      # @parameter%update_num_nodes : map string nat : @parameter%update_num_nodes : @storage
+                CAR;        # nat : map string nat : @parameter%update_num_nodes : @storage
+                SOME;       # option nat : map string nat : @parameter%update_num_nodes : @storage
+                DUP 3;      # @parameter%update_num_nodes : option nat : map string nat : @parameter%update_num_nodes : @storage
+                CDR;        # string : option nat : map string nat : @parameter%update_num_nodes : @storage
+                UPDATE;     # map string nat : @parameter%update_num_nodes : @storage
+                DIG 2;      # @storage : map string nat : @parameter%update_num_nodes
+                SWAP;       # map string nat : @storage : @parameter%update_num_nodes
+                UPDATE 9;   # @storage : @parameter%update_num_nodes
+                SWAP;       # @parameter%update_num_nodes : @storage
+                # assert self.data.num_nodes[params.shard] == params.num_nodes # @parameter%update_num_nodes : @storage
+                DUP;        # @parameter%update_num_nodes : @parameter%update_num_nodes : @storage
+                CAR;        # nat : @parameter%update_num_nodes : @storage
+                DUP 3;      # @storage : nat : @parameter%update_num_nodes : @storage
+                GET 9;      # map string nat : nat : @parameter%update_num_nodes : @storage
+                DIG 2;      # @parameter%update_num_nodes : map string nat : nat : @storage
+                CDR;        # string : map string nat : nat : @storage
+                GET;        # option nat : nat : @storage
+                IF_NONE
+                  {
+                    PUSH int 82; # int : nat : @storage
+                    FAILWITH;   # FAILED
+                  }
+                  {}; # @some : nat : @storage
+                COMPARE;    # int : @storage
+                EQ;         # bool : @storage
+                IF
+                  {}
+                  {
+                    PUSH string "WrongCondition: self.data.num_nodes[params.shard] == params.num_nodes"; # string : @storage
+                    FAILWITH;   # FAILED
+                  }; # @storage
+              }
+              {
+                IF_LEFT
+                  {
+                    # == update_sharding_policy ==
+                    # assert (sp.sender == self.data.admin) or (sp.sender == self.data.leaders[params.shard]), 'NotAdminNorLeaders' # @parameter%update_sharding_policy : @storage
+                    DUP 2;      # @storage : @parameter%update_sharding_policy : @storage
+                    CAR;        # address : @parameter%update_sharding_policy : @storage
+                    SENDER;     # @sender : address : @parameter%update_sharding_policy : @storage
+                    COMPARE;    # int : @parameter%update_sharding_policy : @storage
+                    EQ;         # bool : @parameter%update_sharding_policy : @storage
+                    IF
+                      {
+                        PUSH bool True; # bool : @parameter%update_sharding_policy : @storage
+                      }
+                      {
+                        DUP 2;      # @storage : @parameter%update_sharding_policy : @storage
+                        GET 5;      # map string address : @parameter%update_sharding_policy : @storage
+                        DUP 2;      # @parameter%update_sharding_policy : map string address : @parameter%update_sharding_policy : @storage
+                        CDR;        # string : map string address : @parameter%update_sharding_policy : @storage
+                        GET;        # option address : @parameter%update_sharding_policy : @storage
+                        IF_NONE
+                          {
+                            PUSH int 86; # int : @parameter%update_sharding_policy : @storage
+                            FAILWITH;   # FAILED
+                          }
+                          {}; # @some : @parameter%update_sharding_policy : @storage
+                        SENDER;     # @sender : @some : @parameter%update_sharding_policy : @storage
+                        COMPARE;    # int : @parameter%update_sharding_policy : @storage
+                        EQ;         # bool : @parameter%update_sharding_policy : @storage
+                      }; # bool : @parameter%update_sharding_policy : @storage
+                    IF
+                      {}
+                      {
+                        PUSH string "NotAdminNorLeaders"; # string : @parameter%update_sharding_policy : @storage
+                        FAILWITH;   # FAILED
+                      }; # @parameter%update_sharding_policy : @storage
+                    # self.data.sharding_policies = sp.update_map(self.data.sharding_policies, params.shard, sp.some(params.policy)) # @parameter%update_sharding_policy : @storage
+                    DUP 2;      # @storage : @parameter%update_sharding_policy : @storage
+                    GET 13;     # map string string : @parameter%update_sharding_policy : @storage
+                    DUP 2;      # @parameter%update_sharding_policy : map string string : @parameter%update_sharding_policy : @storage
+                    CAR;        # string : map string string : @parameter%update_sharding_policy : @storage
+                    SOME;       # option string : map string string : @parameter%update_sharding_policy : @storage
+                    DUP 3;      # @parameter%update_sharding_policy : option string : map string string : @parameter%update_sharding_policy : @storage
+                    CDR;        # string : option string : map string string : @parameter%update_sharding_policy : @storage
+                    UPDATE;     # map string string : @parameter%update_sharding_policy : @storage
+                    DIG 2;      # @storage : map string string : @parameter%update_sharding_policy
+                    SWAP;       # map string string : @storage : @parameter%update_sharding_policy
+                    UPDATE 13;  # @storage : @parameter%update_sharding_policy
+                    SWAP;       # @parameter%update_sharding_policy : @storage
+                    # assert self.data.sharding_policies[params.shard] == params.policy # @parameter%update_sharding_policy : @storage
+                    DUP;        # @parameter%update_sharding_policy : @parameter%update_sharding_policy : @storage
+                    CAR;        # string : @parameter%update_sharding_policy : @storage
+                    DUP 3;      # @storage : string : @parameter%update_sharding_policy : @storage
+                    GET 13;     # map string string : string : @parameter%update_sharding_policy : @storage
+                    DIG 2;      # @parameter%update_sharding_policy : map string string : string : @storage
+                    CDR;        # string : map string string : string : @storage
+                    GET;        # option string : string : @storage
+                    IF_NONE
+                      {
+                        PUSH int 88; # int : string : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : string : @storage
+                    COMPARE;    # int : @storage
+                    EQ;         # bool : @storage
+                    IF
+                      {}
+                      {
+                        PUSH string "WrongCondition: self.data.sharding_policies[params.shard] == params.policy"; # string : @storage
+                        FAILWITH;   # FAILED
+                      }; # @storage
+                  }
+                  {
+                    # == vote_new_leader ==
+                    # shard_votes = self.data.voting[params.shard] # @parameter%vote_new_leader : @storage
+                    DUP 2;      # @storage : @parameter%vote_new_leader : @storage
+                    GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%vote_new_leader : @storage
+                    DUP 2;      # @parameter%vote_new_leader : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%vote_new_leader : @storage
+                    GET;        # option (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @parameter%vote_new_leader : @storage
+                    IF_NONE
+                      {
+                        PUSH int 123; # int : @parameter%vote_new_leader : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @some : @parameter%vote_new_leader : @storage
+                    # assert self.data.voting.contains(params.shard), 'NoProposal' # @some : @parameter%vote_new_leader : @storage
+                    DUP 3;      # @storage : @some : @parameter%vote_new_leader : @storage
+                    GET 14;     # map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @some : @parameter%vote_new_leader : @storage
+                    DIG 2;      # @parameter%vote_new_leader : map string (pair (address %new_leader) (pair (address %proposer) (set %votes address))) : @some : @storage
+                    MEM;        # bool : @some : @storage
+                    IF
+                      {}
+                      {
+                        PUSH string "NoProposal"; # string : @some : @storage
+                        FAILWITH;   # FAILED
+                      }; # @some : @storage
+                    # assert not (shard_votes.votes.contains(sp.sender)), 'AlreadyVoted' # @some : @storage
+                    GET 4;      # set address : @storage
+                    SENDER;     # @sender : set address : @storage
+                    MEM;        # bool : @storage
+                    IF
+                      {
+                        PUSH string "AlreadyVoted"; # string : @storage
+                        FAILWITH;   # FAILED
+                      }
+                      {}; # @storage
+                    # shard_votes.votes.add(sp.sender) # @storage
+                  }; # @storage
+              }; # @storage
+            NIL operation; # list operation : @storage
+          }; # list operation : @storage
+      }; # list operation : @storage
+    NIL operation; # list operation : list operation : @storage
+    SWAP;       # list operation : list operation : @storage
+    ITER
+      {
+        CONS;       # list operation : @storage
+      }; # list operation : @storage
+    PAIR;       # pair (list operation) @storage
+  };

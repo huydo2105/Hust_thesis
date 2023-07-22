@@ -24,7 +24,7 @@ protocols:
 bootstrap_peers: []
 accounts:
   archive-baking-node-0:
-    key: edsk4QFGng4J8mQhcAz8pL9TQdZvSXD6a5oVnn7UMvJaKhRoiiftoH
+    key: edskRct6PKTooCVi5BxjybuVkAL3YKrcKV5TXEdd2p13557TN81VhpjsXJTWxfPVMBjQYgHCtKFzZafhxPibDasNuzGPQusJjL
     is_bootstrap_baker_account: true
     bootstrap_balance: '4000000000000'
 signers:
