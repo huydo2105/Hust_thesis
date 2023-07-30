@@ -31,12 +31,15 @@ accounts:
   nodeA:
     # tz1KrF9u57E2cNepecgi98XHcKGL5VFWeA1d
     key: edpktkVQ5sAhGBaPFVuiQEtrLexFPceehQWx5DZGL835bDCgrBaeoJ
+    balance: '4000000000000'
+    # tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
   nodeB:
-  # tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb
     key: edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn
+    balance: '4000000000000'
   nodeC:
     # tz1hWvP1HXRAmBWQU4ewYUeNNrEdz2sUKDNJ
     key: edpkv13FgbJz9serZYhBwsDwsVU9UK3mtPAsuKan4mAKUBie5jGKpY
+    balance: '4000000000000'
 signers:
   tezos-signer-0:
     sign_for_accounts:

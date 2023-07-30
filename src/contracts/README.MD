@@ -57,13 +57,37 @@ octez-client originate contract contract \
                             }
                             {
                             })))))))' \
- --fee 0.001266 \
+ --fee 0.004671 \
  --gas-limit 10600 \
- --storage-limit 496
+ --storage-limit 10000
 ```
 
+
+### Get contract storage
+```
+
+octez-client get contract storage for contract
+curl http://localhost:8733/chains/main/blocks/head/context/contracts/KT1Ksp8YL7qMput43naXv45rfQ8u8pRTCj5t/storage
+``` 
 ### Admin update leader
 
 ```
-octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\" \"Shard-2\""
+octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\" \"Shard-2\"" --burn-cap 1
+```
+
+### Leader update endpoint
+
+```
+octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_endpoint" --arg "Pair \"127.0.0.1:8733\" \"Shard-2\"" --burn-cap 1
+```
+
+### Leader update sharding policies
+
+```
+octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_sharding_policy" --arg "Pair \"Requirement: safety Hard gas limit per operation: 1040000 Hard gas limit per block: 3839999.8903274536 Hard storage limit per operation: 60000 Endorsing reward per slot: 0.9999999701976776 Minimal block delay: 5 Double baking punishment: 64.00002464652061 Consensus threshold: 4667 Balances of each node: archive-baking-node-0: key: edsk4QFGng4J8mQhcAz8pL9TQdZvSXD6a5oVnn7UMvJaKhRoiiftoH is_bootstrap_baker_account: true bootstrap_balance: 4000000000000 Nodes: archive-baking-node: Storage size: 15Gi Instances: 1 rolling-node: Storage size: 15Gi Instances: 5\" \"Shard-2\"" --burn-cap 1
+```
+
+### Self election
+```
+octez-client transfer 6000  from nodeA to contract --entrypoint "self_elected" --arg "\"Shard-2\"" --burn-cap 1
 ```
