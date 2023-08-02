@@ -115,7 +115,7 @@ def run_algo(chain_name):
         os.makedirs(log_dir)
 
     # Create the environment
-    env = MyEnvironment(process_state())
+    env = MyEnvironment(process_state(chain_name))
 
     # Logs will be saved in log_dir/monitor.csv
     env = Monitor(env, log_dir)
