@@ -58,10 +58,15 @@ class MyEnvironment(gym.Env):
         self.state = self.state.astype(np.float32)
         return self.state
 
-    def is_safe_shard(self, num_nodes):
+    def is_safe_shard(self, num_nodes, consensus):
         num_malicious_nodes = np.random.randint(1, 10)
         self.malicious_nodes_history.append(num_malicious_nodes)
-        committee_size = int(num_nodes * 1/3)
+        # Require liveness or consensus algorithm is Emmy plus
+        if consensus == 0:
+            committee_size = int(num_nodes * 1/2)
+        # Require safety or consensus algorithm is Tenderbake
+        else:
+            committee_size = int(num_nodes * 1/3)
         if num_malicious_nodes >= committee_size:
             return False
         return True
@@ -207,8 +212,8 @@ class MyEnvironment(gym.Env):
         if tps < 0:
             return 0
 
-        # if not self.is_safe_shard(num_nodes):
-        #     return 0
+        if not self.is_safe_shard(num_nodes):
+            return 0
 
         # if not self.is_valid_num_nodes(num_nodes):
         #     return 0
@@ -260,7 +265,7 @@ class MyEnvironment(gym.Env):
 
         # Check if any feature is outside the acceptable range
         if not self.is_valid_num_nodes(num_nodes) or not self.is_valid_block_size(block_size) or not self.is_valid_balance(avg_balance, punishment, reward) or \
-        not self.is_valid_capacity(memory, cpu) or requirement_feature not in [0, 1]:
+        not self.is_valid_capacity(memory, cpu) or not self.is_safe_shard(num_nodes, requirement_feature) or requirement_feature not in [0, 1]:
             return True
         else:
             return False

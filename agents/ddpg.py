@@ -136,11 +136,3 @@ for i in range(16):
 state = get_state(env.state)
 print(state)
 
-# Define the command
-node_command = ['./generate_values.sh', '-b', '1', '-n', str(state['num_nodes'])]
-protocol_command = ['./protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), 'e', str(state['reward_block'])]
-update_command = 
-# Run the command
-subprocess.run(node_command)
-subprocess.run(protocol_command)
-subprocess.run(update_command)

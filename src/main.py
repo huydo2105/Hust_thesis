@@ -160,22 +160,21 @@ if __name__ == '__main__':
 
     chains = {}  # Dictionary to store chain name and port
 
-    # for chain in chain_names:
-    #     log("Starting private chain with name " + chain, "INFO")
-    #     start_private_chain(chain)
-    #     chains[chain] = port  # Store chain name and port in the dictionary
-    #     port += 1  # Increment port number for the next chain
+    for chain in chain_names:
+        log("Starting private chain with name " + chain, "INFO")
+        start_private_chain(chain)
+        chains[chain] = port  # Store chain name and port in the dictionary
+        port += 1  # Increment port number for the next chain
 
-    # for chain, port in chains.items():
-    # for chain in chain_names:
-        # log("Port forwarding for chain: " + chain, "INFO")
-        # port_forward_chain(chain, port)
-        # log("Deploying contract", "INFO")
-        # deploy_contract(chain)
-        # log("Updating leader", "INFO")
-        # update_leader(chain)
-        # log("Revealing node indentities", "INFO")
-        # reveal_node_key(chain)
+    for chain, port in chains.items():
+        log("Port forwarding for chain: " + chain, "INFO")
+        port_forward_chain(chain, port)
+        log("Deploying contract", "INFO")
+        deploy_contract(chain)
+        log("Updating leader", "INFO")
+        update_leader(chain)
+        log("Revealing node indentities", "INFO")
+        reveal_node_key(chain)
 
     while True:
         monitor_chain_level(chains)
