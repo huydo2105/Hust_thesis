@@ -2,7 +2,6 @@ import subprocess
 import sys
 import json
 import time
-import pty
 import yaml
 from ddpg import run_algo
 from utils.log import log
