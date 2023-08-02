@@ -110,10 +110,15 @@ perform the following tasks:
 - bake the first block
 
 3. Exec to each node in each shard to do following jobs:
+
 a. Port forwarding the shard so we can track the shard level
+
 b. Deploy smart contract
+
 c. Reveal node identity
+
 d. Update leader to each shard
+
 e. Listen to the level of each shard to run DDPG algorithm to get suitable sharding policy.
 
 Here are a few more useful commands.
