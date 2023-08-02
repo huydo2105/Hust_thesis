@@ -125,9 +125,6 @@ def run_algo(chain_name):
 
     model = DDPG('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
 
-    episode_blocks = []
-    throughput = []
-
     TIMESTEPS = 100
     for i in range(16):
         # Train the agent

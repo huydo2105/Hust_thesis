@@ -91,3 +91,8 @@ octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "upd
 ```
 octez-client transfer 6000  from nodeA to contract --entrypoint "self_elected" --arg "\"Shard-2\"" --burn-cap 1
 ```
+
+### Select leader
+```
+octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "select_leaders" --arg "\"Shard-1\""
+```

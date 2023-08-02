@@ -1,46 +1,56 @@
-# Plot balance and reward
-
-fig, ax = plt.subplots()
+# # Plot Reward (Blue Line)
 # ax.set_ylabel('Reward')
 # ax.set_xlabel('Episodes')
-# ax.plot(env.reward_history, color='b')
+# ax.plot(env.reward_history, color='b', label='Reward')
 # ax.tick_params(axis='y', labelcolor='b')
 
-# # Highlight reward range
+# # Highlight Reward Range (Orange Gap)
 # reward_min = []
 # reward_max = []
 # for i in range(len(env.balance_history)):
 #     reward_min.append(0.00005 * env.balance_history[i])
 #     reward_max.append(0.0005 * env.balance_history[i])
-# ax.fill_between(range(len(env.reward_history)), reward_min, reward_max, color='orange', alpha=0.3)
+# ax.fill_between(range(len(env.reward_history)), reward_min, reward_max, color='orange', alpha=0.3, label='Accepted Reward Range')
+# # The orange area represents the range of possible rewards based on the balance history.
+# # The bottom of the orange area corresponds to 0.00005 times the balance value at each episode,
+# # and the top of the orange area corresponds to 0.0005 times the balance value at each episode.
 
 # fig.tight_layout()
+# plt.legend()  # Show legend for the plot elements
 # plt.show()
 # # Save the figure
 # fig.savefig("./figures/balance.png")
 # plt.close(fig)
 
-# Plot balance and reward
-
 # fig, ax = plt.subplots()
+# # Plot Punishment (Blue Line)
 # ax.set_ylabel('Punishment')
 # ax.set_xlabel('Episodes')
-# ax.plot(env.punishment_history, color='b')
+# ax.plot(env.punishment_history, color='b', label="Punishment")
 # ax.tick_params(axis='y', labelcolor='b')
 
-# # Highlight punishment range
+# # Highlight Accepted Punishment Range (Orange Gap)
 # punishment_min = []
 # punishment_max = []
 # for i in range(len(env.balance_history)):
 #     punishment_min.append(0.01 * env.balance_history[i])
 #     punishment_max.append(0.3 * env.balance_history[i])
-# ax.fill_between(range(len(env.punishment_history)), punishment_min, punishment_max, color='orange', alpha=0.3)
+# ax.fill_between(range(len(env.punishment_history)), punishment_min, punishment_max, color='orange', alpha=0.3, label="Accepted Punishment Range")
+# # The orange area represents the range of accepted punishments based on the balance history.
+# # The bottom of the orange area corresponds to 0.01 times the balance value at each episode,
+# # and the top of the orange area corresponds to 0.3 times the balance value at each episode.
+
+# # Add a label to the accepted punishment range
+# accepted_range_label = "Accepted Punishment Range (0.001 to 0.3 times the Balance)"
+# ax.text(len(env.balance_history) * 0.5, punishment_max[-1], accepted_range_label, ha='center', va='bottom', color='orange')
 
 # fig.tight_layout()
+# plt.legend()  # Show legend for the plot elements
 # plt.show()
 # # Save the figure
 # fig.savefig("./figures/punishment.png")
 # plt.close(fig)
+
 
 # # Scatter plot 1: block size vs memory
 # fig, ax = plt.subplots()

@@ -136,11 +136,33 @@ for i in range(16):
 state = get_state(env.state)
 print(state)
 
-# Define the command
-node_command = ['./generate_values.sh', '-b', '1', '-n', str(state['num_nodes'])]
-protocol_command = ['./protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), 'e', str(state['reward_block'])]
-update_command = 
-# Run the command
-subprocess.run(node_command)
-subprocess.run(protocol_command)
-subprocess.run(update_command)
+
+
+
+fig, ax = plt.subplots()
+
+# Plot Number of Nodes (Blue Line)
+ax.set_ylabel('Nodes')
+ax.set_xlabel('Episodes')
+ax.plot(env.num_nodes_history, color='b', label='Number of nodes')
+ax.tick_params(axis='y', labelcolor='b')
+
+# Highlight Malicious Node Range (Orange Gap)
+node_min = []
+node_max = []
+print(env.num_nodes_history, env.malicious_nodes_history)
+for i in range(len(env.num_nodes_history)):
+    node_min.append(3 * env.malicious_nodes_history[i])  # Assuming 1/3 of the nodes are malicious
+    node_max.append(100)  # Dynamic upper boundary based on the maximum number of nodes
+
+ax.fill_between(range(len(env.num_nodes_history)), node_min, node_max, color='orange', alpha=0.3, label='Accepted Node Range')
+# The orange area represents the range of malicious nodes based on the assumption that 1/3 of the nodes are malicious.
+# The bottom of the orange area corresponds to 1/3 of the total number of nodes at each episode,
+# and the top of the orange area corresponds to the maximum number of nodes observed in the data.
+
+fig.tight_layout()
+plt.legend()  # Show legend for the plot elements
+plt.show()
+# Save the figure
+fig.savefig("./figures/malicious_nodes.png")
+plt.close(fig)

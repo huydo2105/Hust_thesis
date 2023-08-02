@@ -2,12 +2,11 @@ import subprocess
 import sys
 import json
 import time
-import pty
 import yaml
 from ddpg import run_algo
 from utils.log import log
 from utils.dict import convert_dict_to_yaml
-from utils.contract import update_leader, deploy_contract, reveal_node_key
+from utils.contract import update_leader, deploy_contract, reveal_node_key, select_new_leader, update_smartcontract
 from utils.chain import start_private_chain, stop_chain, restart_chain
 
 def monitor_chain_level(chains):
@@ -21,12 +20,13 @@ def monitor_chain_level(chains):
                 current_level = rpc_result["header"]["level"]
                 log("Current level of " + chain + " is: " + str(current_level), "INFO")
                 if current_level % one_cycle == 0:
+                    select_new_leader(chain)
                     get_chain_state(chain)
                     run_algo(chain)
                     ## Get new sharding policies
                     chain_state = f"./{chain}_values.txt"
                     new_sharding_policies = chain_state.read()
-                    update_smartcontract(chain, new_sharding_policies)
+                    update_smartcontract(chain, port, new_sharding_policies)
             else:
                 log(f"Failed to retrieve chain level for '{chain}'. Exiting the loop.", "ERROR")
                 time.sleep(15)
@@ -123,30 +123,7 @@ def get_pod_status(chain_name):
         return None
 
 
-def update_smartcontract(chain, policy):
-    endpoint_command = [
-        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-        'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_endpoint" --arg "Pair \"127.0.0.1:8732\" \"Shard-1\"" --burn-cap 1'
-    ]
-    try:
-        result = subprocess.run(endpoint_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-        if result.returncode == 0:
-            log("Update shard successfully.", "SUCCESS")
 
-    except subprocess.CalledProcessError as e:
-         log(f"Error occurred while updating endpoint for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
-
-    policy_command = [
-        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_sharding_policy" --arg "Pair \'{policy}\' \"Shard-1\"" --burn-cap 1'
-    ]
-    try:
-        result = subprocess.run(policy_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-        if result.returncode == 0:
-            log("Update shard successfully.", "SUCCESS")
-
-    except subprocess.CalledProcessError as e:
-         log(f"Error occurred while updating sharding policies for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -160,22 +137,24 @@ if __name__ == '__main__':
 
     chains = {}  # Dictionary to store chain name and port
 
-    # for chain in chain_names:
-    #     log("Starting private chain with name " + chain, "INFO")
-    #     start_private_chain(chain)
-    #     chains[chain] = port  # Store chain name and port in the dictionary
-    #     port += 1  # Increment port number for the next chain
+    for chain in chain_names:
+        log("Starting private chain with name " + chain, "INFO")
+        start_private_chain(chain)
+        chains[chain] = port  # Store chain name and port in the dictionary
+        port += 1  # Increment port number for the next chain
 
-    # for chain, port in chains.items():
-    # for chain in chain_names:
-        # log("Port forwarding for chain: " + chain, "INFO")
-        # port_forward_chain(chain, port)
-        # log("Deploying contract", "INFO")
-        # deploy_contract(chain)
-        # log("Updating leader", "INFO")
-        # update_leader(chain)
-        # log("Revealing node indentities", "INFO")
-        # reveal_node_key(chain)
+    for chain, port in chains.items():
+        log("Port forwarding for chain: " + chain, "INFO")
+        port_forward_chain(chain, port)
+        time.sleep(15)
+        log("Deploying contract", "INFO")
+        deploy_contract(chain)
+        time.sleep(30) # Wait for contract to be deployed
+        log("Updating leader", "INFO")
+        update_leader(chain)
+        time.sleep(10) 
+        log("Revealing node indentities", "INFO")
+        reveal_node_key(chain)
 
     while True:
         monitor_chain_level(chains)

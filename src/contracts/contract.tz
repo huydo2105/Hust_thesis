@@ -34,7 +34,7 @@
                         (address %new_leader)
                         (string %shard)))
                 (or
-                    (unit %select_leaders)
+                    (string %select_leaders)
                     (string %self_elected)))
             (or
                 (or
@@ -192,69 +192,70 @@
                                             FAILWITH
                                         };
                                     PUSH int 0;
-                                    NIL operation;
+                                    NIL address;
                                     DUP 4;
                                     GET 11;
+                                    DUP 4;
+                                    GET;
+                                    IF_NONE
+                                        {
+                                            PUSH int 101;
+                                            FAILWITH
+                                        }
+                                        {
+                                        };
                                     ITER
                                         {
-                                            NIL address;
-                                            DUP 2;
-                                            CDR;
-                                            ITER
-                                                {
-                                                    CONS
-                                                };
-                                            NIL address;
-                                            SWAP;
-                                            ITER
-                                                {
-                                                    CONS
-                                                };
-                                            DUP;
-                                            ITER
-                                                {
-                                                    PUSH int 0;
-                                                    DUP 6;
-                                                    COMPARE;
-                                                    EQ;
-                                                    IF
-                                                        {
-                                                            DUP 7;
-                                                            GET 5;
-                                                            SWAP;
-                                                            SOME;
-                                                            DUP 4;
-                                                            CAR;
-                                                            UPDATE;
-                                                            DIG 6;
-                                                            SWAP;
-                                                            UPDATE 5;
-                                                            DUG 5;
-                                                            DIG 3;
-                                                            PUSH int 1;
-                                                            ADD;
-                                                            DUG 3
-                                                        }
-                                                        {
-                                                            DIG 3;
-                                                            SWAP;
-                                                            CONTRACT unit;
-                                                            IF_NONE
-                                                                {
-                                                                    PUSH int 108;
-                                                                    FAILWITH
-                                                                }
-                                                                {
-                                                                };
-                                                            PUSH mutez 6000000000;
-                                                            UNIT;
-                                                            TRANSFER_TOKENS;
-                                                            CONS;
-                                                            DUG 2
-                                                        }
-                                                };
-                                            DROP 2
+                                            CONS
                                         };
+                                    NIL address;
+                                    SWAP;
+                                    ITER
+                                        {
+                                            CONS
+                                        };
+                                    NIL operation;
+                                    DUP 2;
+                                    ITER
+                                        {
+                                            PUSH int 0;
+                                            DUP 5;
+                                            COMPARE;
+                                            EQ;
+                                            IF
+                                                {
+                                                    DUP 6;
+                                                    GET 5;
+                                                    SWAP;
+                                                    SOME;
+                                                    DUP 6;
+                                                    UPDATE;
+                                                    DIG 5;
+                                                    SWAP;
+                                                    UPDATE 5;
+                                                    DUG 4;
+                                                    DIG 2;
+                                                    PUSH int 1;
+                                                    ADD;
+                                                    DUG 2
+                                                }
+                                                {
+                                                    CONTRACT unit;
+                                                    IF_NONE
+                                                        {
+                                                            PUSH int 108;
+                                                            FAILWITH
+                                                        }
+                                                        {
+                                                        };
+                                                    PUSH mutez 6000000000;
+                                                    UNIT;
+                                                    TRANSFER_TOKENS;
+                                                    CONS
+                                                }
+                                        };
+                                    SWAP;
+                                    DROP;
                                     SWAP;
                                     DROP;
                                     SWAP;

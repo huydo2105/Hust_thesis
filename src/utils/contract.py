@@ -1,6 +1,6 @@
 from utils.log import log
 import subprocess
-
+import time
 def deploy_contract(chain):
     # Read the contract code from the file
     contract_file_path = "./contracts/contract.tz"
@@ -68,7 +68,7 @@ def deploy_contract(chain):
                                     }
                                     {
                                     })))))))' \
-        --fee 0.004671 \
+        --fee 1 \
         --gas-limit 10600 \
         --storage-limit 10000'''
     ]
@@ -98,11 +98,9 @@ def deploy_contract(chain):
 
 def update_leader(chain):
     octez_command = [
-            'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-            '''octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\" \"Shard-1\"" --burn-cap 1 &
-            octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\" \"Shard-2\"" --burn-cap 1 &
-            octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\" \"Shard-3\"" --burn-cap 1'''
-        ]
+    'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+    f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "admin_update_leader" --arg "Pair \\"tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya\\" \\"{chain}\\"" --burn-cap 1'
+]
     try:
         result = subprocess.run(octez_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         if result.returncode == 0:
@@ -125,3 +123,43 @@ def reveal_node_key(chain):
 
     except subprocess.CalledProcessError as e:
          log(f"Error occurred while deploying contract for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+
+def update_smartcontract(chain, endpoint, policy):
+    endpoint_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_endpoint" --arg "Pair \"127.0.0.1:\'{endpoint}\' \'{chain}\'" --burn-cap 1'
+    ]
+    try:
+        result = subprocess.run(endpoint_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if result.returncode == 0:
+            log("Update shard successfully.", "SUCCESS")
+
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while updating endpoint for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+
+    policy_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_sharding_policy" --arg "Pair \'{endpoint}\' \'{chain}\'" --burn-cap 1'
+    ]
+    try:
+        result = subprocess.run(policy_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if result.returncode == 0:
+            log("Update shard successfully.", "SUCCESS")
+
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while updating sharding policies for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+
+def select_new_leader(chain):
+    leader_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "select_leaders" --arg "\'{chain}\'"'
+    ]
+    try:
+        result = subprocess.run(leader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if result.returncode == 0:
+            log("Update shard leader successfully.", "SUCCESS")
+
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while updating leader for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+
+    time.sleep(30)

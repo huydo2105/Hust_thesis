@@ -51,28 +51,28 @@ plt.savefig('../figures/transaction_size.png')
 fig2, ax2 = plt.subplots(figsize=(8, 4))
 
 # Add a smoothed curve to the ours line
-sns.lineplot(x='size', y='ours', data=df, ax=ax2, label='our platform', color='#377eb8', linewidth=3, alpha=0.7)
+sns.lineplot(x='size', y='ours', data=df1, ax=ax2, label='our platform', color='#377eb8', linewidth=3, alpha=0.7)
 
 # Add a smoothed curve to the fixed_consensus line
-sns.lineplot(x='size', y='fixed_consensus', data=df, ax=ax2, label='fixed consensus algorithm', color='#ff7f00', linewidth=3, alpha=0.7)
+sns.lineplot(x='size', y='fixed_consensus', data=df1, ax=ax2, label='fixed consensus algorithm', color='#ff7f00', linewidth=3, alpha=0.7)
 
 # Add a smoothed curve to the fixed_block_size line
-sns.lineplot(x='size', y='fixed_block_size', data=df, ax=ax2, label='fixed block size', color='#98df8a', linewidth=3, alpha=0.7)
+sns.lineplot(x='size', y='fixed_block_size', data=df1, ax=ax2, label='fixed block size', color='#98df8a', linewidth=3, alpha=0.7)
 
 # Add a point marker to each data point
-for i in range(len(df)):
-    ax2.plot(df['size'][i], df['ours'][i], 'o', color='#377eb8', alpha=0.7)
-    ax2.plot(df['size'][i], df['fixed_consensus'][i], 'o', color='#ff7f00', alpha=0.7)
-    ax2.plot(df['size'][i], df['fixed_block_size'][i], 'o', color='#98df8a', alpha=0.7)
+for i in range(len(df1)):
+    ax2.plot(df1['size'][i], df1['ours'][i], 'o', color='#377eb8', alpha=0.7)
+    ax2.plot(df1['size'][i], df1['fixed_consensus'][i], 'o', color='#ff7f00', alpha=0.7)
+    ax2.plot(df1['size'][i], df1['fixed_block_size'][i], 'o', color='#98df8a', alpha=0.7)
 
 # Add a title and labels to the axes
 ax2.set_ylabel('Throughput (TPS)')
-ax2.set_xlabel('Average Transaction Size (B)')
+ax2.set_xlabel('The initial number of nodes')
 
 # Add a legend
 ax2.legend()
 
 # Save the figure
-plt.savefig('../figures/transaction_size.png')
+plt.savefig('../figures/initial_nodes.png')
 
 plt.show()

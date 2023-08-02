@@ -119,7 +119,7 @@ def get_finance(balace, reward, punishment):
     return np.array([avg_balance_per_node_scaled, reward_scaled, punishment_scaled])
 
 def process_state():
-    with open('/home/fetia/IdeaProjects/mkchain/scripts/state/result.txt', 'r') as f:
+    with open('/home/vantv/Desktop/Hust_thesis/scripts/state/result.txt', 'r') as f:
         data = f.read()
     nodes = extract_node(data)
     gas_op, gas_block, storage_op, reward_slot, delay, punishment, threshold, requirement, balances = extract_relevant_variables(data)
