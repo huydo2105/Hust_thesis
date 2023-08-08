@@ -100,12 +100,20 @@ def extract_relevant_variables(data):
     punishment = int(re.findall('Double baking punishment: (\d+)', data)[0])
     threshold = int(re.findall('Consensus threshold: (\d+)', data)[0])
     requirement = re.findall('Requirement: (\w+)', data)[0]
-    balances = []
-    balance_regex = re.compile(r'([\w-]+):\n\s+key:\s+(\w+)\n\s+is_bootstrap_baker_account:\s+(true|false)\n\s+bootstrap_balance:\s+\'(\d+)\'')
-    for match in balance_regex.finditer(data):
-        node_name = match.group(1)
-        balance = int(match.group(4))
-        balances.append(balance)
+
+    # Define the regular expression patterns
+    bootstrap_balance_pattern = r"bootstrap_balance:\s+(\d+)"
+    balance_pattern = r"balance:\s+(\d+)"
+
+    # Find matches for the patterns in the config text
+    bootstrap_balance_matches = re.findall(bootstrap_balance_pattern, data)
+    balance_matches = re.findall(balance_pattern, data)
+    
+    # Convert the matches to integers and insert them into arrays
+    bootstrap_balance_matches = [int(match) for match in bootstrap_balance_matches]
+    balance_matches = [int(match) for match in balance_matches]
+
+    balances = bootstrap_balance_matches + balance_matches
     return gas_op, gas_block, storage_op, reward_slot, delay, punishment, threshold, requirement, balances
 
 def get_finance(balace, reward, punishment):
@@ -153,7 +161,7 @@ def process_state(chain_name):
     block_size = np.array([gas_block])
     memory_capacity = np.array([avg_memory_capacity_per_node])
     cpu_capacity = np.array([avg_cpu_capacity_per_node])
-    requirement_feature = np.array([1 if requirement == 'safety' else 0])
+    requirement_feature = np.array([0 if requirement == 'safety' else 1])
     finance = get_finance(avg_balance_per_node, reward_slot, punishment)
 
     # Scale features

@@ -88,7 +88,7 @@ python3 NUM_SHARD CHAIN_NAME
 
 For example with NUM_SHARD = 2, run following command
 ```shell
-python3 2 chain-1 chain-2
+python3 chain-1 8732
 ```
 
 The command will do following tasks:

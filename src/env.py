@@ -1,4 +1,4 @@
-import gymnasium as gym
+import gym
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 from state import process_state 
@@ -30,7 +30,8 @@ MAX_NUM_NODES = 100
 MIN_NUM_NODES = 4
 
 class MyEnvironment(gym.Env):
-    def __init__(self, state):
+    def __init__(self, state, chain):
+        self.chain = chain
         self.state = state  # Initialize the state
         self.malicious_nodes_history = []
         self.tps_history = []
@@ -51,18 +52,22 @@ class MyEnvironment(gym.Env):
         )
         
         
-    def reset(self, seed=None):
+    def reset(self):
         # Reset the environment
         # Return the initial state as the observation
-        self.state = process_state()
+        self.state = process_state(self.chain)
         self.state = self.state.astype(np.float32)
-        info = {}  # Create an empty info dictionary
-        return self.state, info  # Return the state and info as a tuple
+        return self.state
 
-    def is_safe_shard(self, num_nodes):
+    def is_safe_shard(self, num_nodes, consensus):
         num_malicious_nodes = np.random.randint(1, 10)
         self.malicious_nodes_history.append(num_malicious_nodes)
-        committee_size = int(num_nodes * 1/3)
+        # Require liveness or consensus algorithm is Emmy plus
+        if consensus == 0:
+            committee_size = int(num_nodes * 1/2)
+        # Require safety or consensus algorithm is Tenderbake
+        else:
+            committee_size = int(num_nodes * 1/3)
         if num_malicious_nodes >= committee_size:
             return False
         return True
@@ -148,11 +153,8 @@ class MyEnvironment(gym.Env):
         self.memory_history.append(memory)
         self.cpu_history.append(cpu)
         self.requirement_history.append(requirement)
-
-         # Compute other values (truncated, info) if necessary
-        truncated = False  # Set truncated to False if not applicable
-        info = {}  # Create an empty info dictionary if not applicable
-        return new_state, reward, done, truncated, info
+        
+        return new_state, reward, done, {}
 
     def get_history(self):
         return self.balance_history
@@ -211,8 +213,8 @@ class MyEnvironment(gym.Env):
         if tps < 0:
             return 0
 
-        # if not self.is_safe_shard(num_nodes):
-        #     return 0
+        if not self.is_safe_shard(num_nodes, requirement_feature):
+            return 0
 
         # if not self.is_valid_num_nodes(num_nodes):
         #     return 0
@@ -264,33 +266,28 @@ class MyEnvironment(gym.Env):
 
         # Check if any feature is outside the acceptable range
         if not self.is_valid_num_nodes(num_nodes) or not self.is_valid_block_size(block_size) or not self.is_valid_balance(avg_balance, punishment, reward) or \
-        not self.is_valid_capacity(memory, cpu) or requirement_feature not in [0, 1]:
+        not self.is_valid_capacity(memory, cpu) or not self.is_safe_shard(num_nodes, requirement_feature) or requirement_feature not in [0, 1]:
             return True
         else:
             return False
 
-    # Function to call the script
-    def call_script():
-        subprocess.call(['python', 'path/to/script.py'])
 
-# env = MyEnvironment(process_state())
+# env = MyEnvironment(process_state("chain-1"))
 # # It will check your custom environment and output additional warnings if needed
 # check_env(env)
 # # Box(4,) means that it is a Vector with 4 components
-# print("Reset state space shape:", process_state().shape)
+# print("Reset state space shape:", process_state("chain-1").shape)
 # print("Observation space:", env.observation_space)
 # print("Shape:", env.observation_space.shape)
 # # Discrete(2) means that there is two discrete actions
 # print("Action space:", env.action_space)
 
 # # The reset method is called at the beginning of an episode
-
-# # Reset the environment
 # obs = env.reset()
 # # Sample a random action
 # action = env.action_space.sample()
 # print("Sampled action:", action)
-# obs, reward, done, truncated, info = env.step(action)
+# obs, reward, done, info = env.step(action)
 # # Note the obs is a numpy array
 # # info is an empty dict for now but can contain any debugging info
 # # reward is a scalar

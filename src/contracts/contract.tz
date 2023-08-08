@@ -258,8 +258,15 @@
                                     DROP;
                                     SWAP;
                                     DROP;
-                                    SWAP;
-                                    DROP
+                                    DIG 2;
+                                    DUP;
+                                    GET 11;
+                                    NONE
+                                        (set address);
+                                    DIG 4;
+                                    UPDATE;
+                                    UPDATE 11;
+                                    SWAP
                                 }
                                 {
                                     PUSH mutez 6000000000;
@@ -401,7 +408,7 @@
                                     GET;
                                     IF_NONE
                                         {
-                                            PUSH int 130;
+                                            PUSH int 133;
                                             FAILWITH
                                         }
                                         {
@@ -412,7 +419,7 @@
                                     GET;
                                     IF_NONE
                                         {
-                                            PUSH int 131;
+                                            PUSH int 134;
                                             FAILWITH
                                         }
                                         {
@@ -460,7 +467,7 @@
                                     GET;
                                     IF_NONE
                                         {
-                                            PUSH int 136;
+                                            PUSH int 139;
                                             FAILWITH
                                         }
                                         {
@@ -470,7 +477,7 @@
                                     EDIV;
                                     IF_NONE
                                         {
-                                            PUSH int 136;
+                                            PUSH int 139;
                                             FAILWITH
                                         }
                                         {
@@ -488,7 +495,7 @@
                                             CONTRACT unit;
                                             IF_NONE
                                                 {
-                                                    PUSH int 137;
+                                                    PUSH int 140;
                                                     FAILWITH
                                                 }
                                                 {
@@ -501,7 +508,7 @@
                                             CONTRACT unit;
                                             IF_NONE
                                                 {
-                                                    PUSH int 138;
+                                                    PUSH int 141;
                                                     FAILWITH
                                                 }
                                                 {
@@ -527,20 +534,18 @@
                                                     (pair
                                                         address
                                                         (set address)));
-                                            DIG 4;
+                                            DUP 5;
                                             UPDATE;
                                             UPDATE 14;
-                                            SWAP
+                                            DUG 2
                                         }
                                         {
-                                            SWAP;
-                                            DROP;
                                             SWAP;
                                             DROP;
                                             CONTRACT unit;
                                             IF_NONE
                                                 {
-                                                    PUSH int 142;
+                                                    PUSH int 145;
                                                     FAILWITH
                                                 }
                                                 {
@@ -551,7 +556,20 @@
                                             UNIT;
                                             TRANSFER_TOKENS;
                                             CONS
-                                        }
+                                        };
+                                    DIG 2;
+                                    DUP;
+                                    GET 14;
+                                    NONE
+                                        (pair
+                                            address
+                                            (pair
+                                                address
+                                                (set address)));
+                                    DIG 4;
+                                    UPDATE;
+                                    UPDATE 14;
+                                    SWAP
                                 }
                         }
                         {
@@ -705,14 +723,14 @@
                                             GET;
                                             IF_NONE
                                                 {
-                                                    PUSH int 123;
+                                                    PUSH int 124;
                                                     FAILWITH
                                                 }
                                                 {
                                                 };
                                             DUP 3;
                                             GET 14;
-                                            DIG 2;
+                                            DUP 3;
                                             MEM;
                                             IF
                                                 {
@@ -721,6 +739,7 @@
                                                     PUSH string "NoProposal";
                                                     FAILWITH
                                                 };
+                                            DUP;
                                             GET 4;
                                             SENDER;
                                             MEM;
@@ -730,7 +749,21 @@
                                                     FAILWITH
                                                 }
                                                 {
-                                                }
+                                                };
+                                            DUP;
+                                            GET 4;
+                                            PUSH bool True;
+                                            SENDER;
+                                            UPDATE;
+                                            UPDATE 4;
+                                            DIG 2;
+                                            DUP;
+                                            GET 14;
+                                            DIG 2;
+                                            SOME;
+                                            DIG 3;
+                                            UPDATE;
+                                            UPDATE 14
                                         }
                                 };
                             NIL operation

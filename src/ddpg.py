@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 import gymnasium as gym
 import numpy as np
@@ -51,6 +52,7 @@ def get_state(state):
     d["reward_block"] = ((state[2] + 1) / 2) * (REWARD_MAX - REWARD_MIN) + REWARD_MIN
     d["punishment"] = ((state[3] + 1) / 2) * (PUNISHMENT_MAX - PUNISHMENT_MIN) + PUNISHMENT_MIN 
     d["tps"] = d["block_size"] / (AVERAGE_TRANSACTION_COST * TIME_PER_BLOCK)
+    d["requirement"] = int(state[6])
     return d
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
@@ -115,7 +117,7 @@ def run_algo(chain_name):
         os.makedirs(log_dir)
 
     # Create the environment
-    env = MyEnvironment(process_state(chain_name))
+    env = MyEnvironment(process_state(chain_name), chain_name)
 
     # Logs will be saved in log_dir/monitor.csv
     env = Monitor(env, log_dir)
@@ -134,12 +136,17 @@ def run_algo(chain_name):
         # model.save(f"{models_dir}/{TIMESTEPS*i}")
 
     state = get_state(env.state)
+    print(state)
+    if state['requirement'] == 0:
+        requirement_option = 'safety'
+    else:
+        requirement_option = 'liveness'
 
     # Define the command
     config_file = f"{chain_name}_values.yaml"
-    
+
     node_command = ['./script/generate_values.sh', '-b', '1', '-n', str(state['num_nodes']), '-c', chain_name]
-    protocol_command = ['./script/protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), '-e', str(state['reward_block']), '-f', config_file]
+    protocol_command = ['./script/protocol.sh', '-b', str(state['block_size']), '-p', str(state['punishment']), '-e', str(state['reward_block']), '-r', requirement_option, '-f', config_file]
     update_command =  [
         'helm', 'upgrade',
         chain_name, 'oxheadalpha/tezos-chain',
@@ -169,3 +176,10 @@ def run_algo(chain_name):
     except subprocess.CalledProcessError as e:
         log(f"Command failed " + str(e), "ERROR")
 
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python your_script.py <chain_name>")
+        sys.exit(1)
+
+    chain_name = sys.argv[1]
+    run_algo(chain_name)

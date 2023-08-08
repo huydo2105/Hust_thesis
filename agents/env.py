@@ -212,7 +212,7 @@ class MyEnvironment(gym.Env):
         if tps < 0:
             return 0
 
-        if not self.is_safe_shard(num_nodes):
+        if not self.is_safe_shard(num_nodes, requirement_feature):
             return 0
 
         # if not self.is_valid_num_nodes(num_nodes):

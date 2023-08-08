@@ -119,40 +119,78 @@ def reveal_node_key(chain):
     try:
         result = subprocess.run(octez_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         if result.returncode == 0:
-            log("Reveal node identities successfully.", "SUCCESS")
+            log("Importing secret key for nodes successfully.", "SUCCESS")
 
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while importing secret keys for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+    
+    transfer_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        '''octez-client transfer 1000000 from archive-baking-node-0 to nodeA --burn-cap 1'''
+    ]
+    try:
+        result = subprocess.run(transfer_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+    
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while transfering tokens for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+    
+    time.sleep(30)
+    
+    transfer_command1 = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        '''octez-client transfer 100000 from nodeA to nodeB --burn-cap 1 &
+         octez-client transfer 100000 from archive-baking-node-0 to nodeC --burn-cap 1 '''
+    ]
+    try:
+        result = subprocess.run(transfer_command1, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while transfering tokens for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+
+    transfer_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        '''octez-client reveal key for nodeA &
+        octez-client reveal key for nodeB &
+         octez-client reveal key for nodeC '''
+    ]
+    try:
+        result = subprocess.run(transfer_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if result.returncode == 0:
+            log("Revealing node identitites successfully.", "SUCCESS")
+                    
     except subprocess.CalledProcessError as e:
          log(f"Error occurred while deploying contract for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
 
-def update_smartcontract(chain, endpoint, policy):
-    endpoint_command = [
-        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_endpoint" --arg "Pair \"127.0.0.1:\'{endpoint}\' \'{chain}\'" --burn-cap 1'
-    ]
-    try:
-        result = subprocess.run(endpoint_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-        if result.returncode == 0:
-            log("Update shard successfully.", "SUCCESS")
-
-    except subprocess.CalledProcessError as e:
-         log(f"Error occurred while updating endpoint for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
-
+def update_smartcontract(chain, policy):
     policy_command = [
         'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_sharding_policy" --arg "Pair \'{endpoint}\' \'{chain}\'" --burn-cap 1'
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_sharding_policy" --arg "Pair \\"{policy}\\" \\"{chain}\\"" --burn-cap 1'
     ]
     try:
         result = subprocess.run(policy_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         if result.returncode == 0:
-            log("Update shard successfully.", "SUCCESS")
+            log("Update sharding policies successfully.", "SUCCESS")
 
     except subprocess.CalledProcessError as e:
          log(f"Error occurred while updating sharding policies for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
+         
+def update_endpoint(chain, endpoint):
+    endpoint_command = [
+        'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "update_endpoint" --arg "Pair \\"127.0.0.1:{endpoint}\\" \\"{chain}\\"" --burn-cap 1'
+    ]
+    try:
+        result = subprocess.run(endpoint_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if result.returncode == 0:
+            log("Update endpoint successfully.", "SUCCESS")
+
+    except subprocess.CalledProcessError as e:
+         log(f"Error occurred while updating endpoint for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
 
 def select_new_leader(chain):
     leader_command = [
         'kubectl', '-n', chain, 'exec', 'archive-baking-node-0', '--', 'sh', '-c',
-        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "select_leaders" --arg "\'{chain}\'"'
+        f'octez-client transfer 0 from archive-baking-node-0 to contract --entrypoint "select_leaders" --arg "\\"{chain}\\"" --burn-cap 1'
     ]
     try:
         result = subprocess.run(leader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -161,5 +199,3 @@ def select_new_leader(chain):
 
     except subprocess.CalledProcessError as e:
          log(f"Error occurred while updating leader for chain '{chain}': {e}\nStderr: {e.stderr}", "ERROR")
-
-    time.sleep(30)

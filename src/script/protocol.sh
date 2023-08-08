@@ -9,9 +9,10 @@ endorsing_reward_per_slot=""
 minimal_block_delay=""
 double_baking_punishment=""
 consensus_threshold=""
+requirement=""
 
 # Parse command line arguments
-while getopts "f:o:b:s:e:d:p:t:" opt
+while getopts "f:o:b:s:e:d:p:t:r:" opt
 do
   case $opt in
     f) config_file=$OPTARG;;
@@ -22,6 +23,7 @@ do
     d) minimal_block_delay=$OPTARG;;
     p) double_baking_punishment=$OPTARG;;
     t) consensus_threshold=$OPTARG;;
+    r) requirement=$OPTARG;;
   esac
 done
 
@@ -65,6 +67,16 @@ fi
 if [ -n "$consensus_threshold" ]; then
   yq w -i "$config_file" activation.protocol_parameters.consensus_threshold "$consensus_threshold"
 fi
-  yq w -i "$config_file" requirement "safety"
+
+if [ -n "$requirement" ]; then
+  if [ "$requirement" == "safety" ]; then
+    # Replace the protocol with Ps9mPmXaRzmzk35gbAYNCAw6UXdE2qoABTHbN2oEEc1qM7CwT9P
+    yq w -i "$config_file" activation.protocol Ps9mPmXaRzmzk35gbAYNCAw6UXdE2qoABTHbN2oEEc1qM7CwT9P
+  elif [ "$requirement" == "liveness" ]; then
+    # Replace the protocol with PtHangzHogokSuiMHemCuowEavgYTP8J5qQ9fQS793MHYFpCY3r
+    yq w -i "$config_file" activation.protocol PtHangzHogokSuiMHemCuowEavgYTP8J5qQ9fQS793MHYFpCY3r
+  fi
+fi
+
 
 echo "Values updated in config file: $config_file"

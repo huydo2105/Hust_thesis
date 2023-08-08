@@ -106,6 +106,7 @@ def main():
                     x += 1
                 else:
                     sp.send(leader, sp.tez(6000))
+            del self.data.proposed_leaders[params.shard]
 
         @sp.entry_point
         def propose_new_leader(self, params):
@@ -124,6 +125,8 @@ def main():
             assert self.data.voting.contains(params.shard) , "NoProposal"
             assert not shard_votes.votes.contains(sp.sender), "AlreadyVoted"
             shard_votes.votes.add(sp.sender)
+            self.data.voting[params.shard] = shard_votes
+            
 
         @sp.entry_point
         def update_leader(self, params):
@@ -140,6 +143,9 @@ def main():
                 del self.data.voting[params.shard]
             else:
                 sp.send(new_leader, sp.tez(3000))
+
+            del self.data.voting[params.shard]
+
                 
                 
     
@@ -159,6 +165,8 @@ if "templates" not in __name__:
         nodeG_shard2 = sp.test_account("nodeC_shard2")
         nodeH_shard2 = sp.test_account("nodeD_shard2")
 
+        admin_address = sp.address("tz1iyd1dExPGVuS7JvueGXF13LZaENVcaPya")
+        
         # Instantiate a contract
         c1 = main.ShardingBlockchain(
             admin=admin.address,

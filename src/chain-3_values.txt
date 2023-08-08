@@ -1,4 +1,4 @@
-Requirement: None
+Requirement: Safety
 
 Hard gas limit per operation: 1040000
 Hard gas limit per block: 5200000
@@ -12,18 +12,21 @@ Balances of each node:
 archive-baking-node-0:
   key: edskS8TcwFowyEtKdUtc2hr34gHEAXvS6pbKGBR2QPvWNKDDeqjFcndkHfaSRkbyUa5YZ2jEHngDA3hZQzdLxd8gerM1fpzFQP
   is_bootstrap_baker_account: true
-  bootstrap_balance: 4000000000000
+  bootstrap_balance: 400000000000000
 nodeA:
   key: edpktkVQ5sAhGBaPFVuiQEtrLexFPceehQWx5DZGL835bDCgrBaeoJ
-  balance: 4000000000000
+  balance: 400000000000000
 nodeB:
   key: edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn
-  balance: 4000000000000
+  balance: 400000000000000
 nodeC:
   key: edpkv13FgbJz9serZYhBwsDwsVU9UK3mtPAsuKan4mAKUBie5jGKpY
-  balance: 4000000000000
+  balance: 400000000000000
 
 Nodes:
 archive-baking-node:
   Storage size: 15Gi
   Instances: 1
+rolling-node:
+  Storage size: 15Gi
+  Instances: 2

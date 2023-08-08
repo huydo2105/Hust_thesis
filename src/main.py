@@ -6,34 +6,35 @@ import yaml
 from ddpg import run_algo
 from utils.log import log
 from utils.dict import convert_dict_to_yaml
-from utils.contract import update_leader, deploy_contract, reveal_node_key, select_new_leader, update_smartcontract
+from utils.contract import update_leader, deploy_contract, reveal_node_key, select_new_leader, update_smartcontract, update_endpoint
 from utils.chain import start_private_chain, stop_chain, restart_chain
 
-def monitor_chain_level(chains):
-    one_cycle = 50
+def monitor_chain_level(chain, port):
+    one_cycle = 40
     while True:
-        for chain, port in chains.items():
-            output = subprocess.run(['wget', '-qO-', f'http://localhost:{port}/chains/main/blocks/head/'],
-                                    capture_output=True, text=True)
-            if output.returncode == 0:
-                rpc_result = json.loads(output.stdout)
-                current_level = rpc_result["header"]["level"]
-                log("Current level of " + chain + " is: " + str(current_level), "INFO")
-                if current_level % one_cycle == 0:
-                    select_new_leader(chain)
-                    get_chain_state(chain)
-                    run_algo(chain)
-                    ## Get new sharding policies
-                    chain_state = f"./{chain}_values.txt"
-                    new_sharding_policies = chain_state.read()
-                    update_smartcontract(chain, port, new_sharding_policies)
-            else:
-                log(f"Failed to retrieve chain level for '{chain}'. Exiting the loop.", "ERROR")
-                time.sleep(15)
-                break
+        output = subprocess.run(['wget', '-qO-', f'http://localhost:{port}/chains/main/blocks/head/'],
+                                capture_output=True, text=True)
+        if output.returncode == 0:
+            rpc_result = json.loads(output.stdout)
+            current_level = rpc_result["header"]["level"]
+            log("Current level of " + chain + " is: " + str(current_level), "INFO")
+            if current_level % one_cycle == 0:
+                select_new_leader(chain)
+                get_chain_state(chain)
+                run_algo(chain)
+                time.sleep(30)
+                ## Get new sharding policies
+                chain_state = f"./{chain}_values.txt"
+                with open(chain_state, "r") as file:
+                    new_sharding_policies = file.read().replace("\n", "")
+                update_smartcontract(chain, new_sharding_policies)
+        else:
+            log(f"Failed to retrieve chain level for '{chain}'. Exiting the loop.", "ERROR")
+            time.sleep(15)
+            break
 
-            # Add a delay before checking the chain level again
-            time.sleep(5)
+        # Add a delay before checking the chain level again
+        time.sleep(5)
 
 def get_chain_state(chain_name):
     values_file = f"./{chain_name}_values.yaml"
@@ -46,7 +47,7 @@ def get_chain_state(chain_name):
     try:
         requirement = config['requirement']
     except Exception:
-        requirement = None
+        requirement = "Safety"
     hard_gas_limit_per_operation = config['activation']['protocol_parameters']['hard_gas_limit_per_operation']
     hard_gas_limit_per_block = config['activation']['protocol_parameters']['hard_gas_limit_per_block']
     hard_storage_limit_per_operation = config['activation']['protocol_parameters']['hard_storage_limit_per_operation']
@@ -126,35 +127,30 @@ def get_pod_status(chain_name):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print('Please provide the number of chains and chain names as command-line arguments.')
+    if len(sys.argv) < 2:
+        print('Please provide the chain names, and port number as command-line arguments.')
         sys.exit(1)
 
-    num_chains = int(sys.argv[1])
-    chain_names = sys.argv[2:2+num_chains]
+    chain = sys.argv[1]
+    custom_port = int(sys.argv[-1])  # Last argument as port number
 
-    port = 8732  # Starting port number
+    port = custom_port  # Starting port number
 
-    chains = {}  # Dictionary to store chain name and port
+    log("Starting private chain with name " + chain, "INFO")
+    start_private_chain(chain)
 
-    for chain in chain_names:
-        log("Starting private chain with name " + chain, "INFO")
-        start_private_chain(chain)
-        chains[chain] = port  # Store chain name and port in the dictionary
-        port += 1  # Increment port number for the next chain
-
-    for chain, port in chains.items():
-        log("Port forwarding for chain: " + chain, "INFO")
-        port_forward_chain(chain, port)
-        time.sleep(15)
-        log("Deploying contract", "INFO")
-        deploy_contract(chain)
-        time.sleep(30) # Wait for contract to be deployed
-        log("Updating leader", "INFO")
-        update_leader(chain)
-        time.sleep(10) 
-        log("Revealing node indentities", "INFO")
-        reveal_node_key(chain)
+    log("Port forwarding for chain: " + chain, "INFO")
+    port_forward_chain(chain, port)
+    time.sleep(10)
+    log("Deploying contract", "INFO")
+    deploy_contract(chain)
+    log("Updating leader", "INFO")
+    update_leader(chain)
+    log("Updating endpoint", "INFO")
+    update_endpoint(chain, port)
+    time.sleep(30)
+    log("Revealing node indentities", "INFO")
+    reveal_node_key(chain)
 
     while True:
-        monitor_chain_level(chains)
+        monitor_chain_level(chain, port)
